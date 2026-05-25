@@ -40,49 +40,29 @@ qmtclient/
 
 `0.1.x` 继续以 qmtserver `/v1` 兼容为主。后续如果 qmtserver 引入新 API 版本，先补兼容性文档和测试，再扩展客户端接口。
 
-## Milestones
+## 当前状态
 
-### M1: Base SDK 稳定
+`0.1.0` 已具备：
 
-状态：已完成。
+- qmtserver `/v1` HTTP RPC 和 WebSocket 客户端。
+- `market`、`account`、`trading` 策略接口。
+- `FakeQmtClient`、fixture loading、`EventReplay`。
+- 中文文档、示例、CI、typed package。
 
-- `QmtClient` 兼容 qmtserver `/v1`。
-- HTTP RPC、状态查询、订单/成交缓存、WebSocket 事件可用。
-- 连接、认证、HTTP、协议、RPC 错误有类型化异常。
-- LAN、VPN、反向代理文档和示例已补。
+## 后续方向
 
-### M2: Strategy Facade
+- 跟随 qmtserver `/v1` 补充常用只读 helper。
+- 根据真实策略使用反馈微调 facade 命名和返回结构。
+- 扩展 fixture/event replay 示例。
+- 当 qmtserver 引入新 API 版本时，先补兼容性测试和文档。
 
-状态：已完成。
+## 发布检查
 
-- `client.market`
-- `client.account`
-- `client.trading`
-- facade 只做薄封装，不绕过 qmtserver 保护。
-
-### M3: Offline Strategy Testing
-
-状态：已完成。
-
-- `FakeQmtClient`
-- JSON/JSONL fixture loading
-- `EventReplay`
-- 离线策略测试示例
-
-### M4: 兼容性与发布准备
-
-状态：已完成。
-
-- qmtclient/qmtserver `/v1` 兼容性文档。
-- `CHANGELOG.md`。
-- `py.typed`。
-- CI、build、twine check 配置。
-- `0.1.0` release readiness 检查清单。
-
-## 发布前验收
-
-- 无 MiniQMT 机器可以使用 `QmtClient` 调用远程 qmtserver。
-- 策略代码不导入 `xtquant`。
-- 常见行情、账户、委托、事件 helper 有测试。
-- 离线测试可用 fake client、fixtures、event replay。
-- `uv run python -m unittest discover -s tests`、ruff、ty、build 通过。
+```powershell
+uv run python -m unittest discover -s tests
+uv run ruff check .
+uv run ruff format --check .
+uv run ty check
+uv build
+uv tool run twine check dist/*
+```
