@@ -16,6 +16,7 @@ qmtclient 已经从 `qmtserver.client` 拆分为独立包骨架。
 - RPC 和事件示例。
 - LAN、VPN、反向代理远程连接示例。
 - 策略友好 facade：`client.market`、`client.account`、`client.trading`。
+- 离线策略测试能力：`FakeQmtClient`、fixture loading、event replay。
 - 单元测试使用 `httpx.MockTransport` 和 fake WebSocket，不需要真实 qmtserver。
 
 ## Python 支持
@@ -159,6 +160,8 @@ qmtclient/
 - 公共 facade 行为有测试覆盖。
 
 ### M3: Offline Strategy Testing
+
+状态：已完成。
 
 目标：让策略逻辑可以在没有 qmtserver、MiniQMT 或 `xtquant` 的环境中测试。
 

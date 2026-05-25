@@ -1,0 +1,50 @@
+{
+  "health": {
+    "ok": true,
+    "api_versions": ["v1"]
+  },
+  "status": {
+    "ok": true,
+    "service": "fake"
+  },
+  "rpc": {
+    "xtdata.get_full_tick": {
+      "000001.SZ": {
+        "last": 10.5,
+        "volume": 1000
+      }
+    },
+    "trader.query_stock_asset": {
+      "account_id": "example-account",
+      "cash": 100000.0
+    },
+    "trader.query_stock_positions": [
+      {
+        "stock_code": "000001.SZ",
+        "volume": 100
+      }
+    ]
+  },
+  "orders": [
+    {
+      "order_id": "order-1",
+      "stock_code": "000001.SZ",
+      "volume": 100
+    }
+  ],
+  "trades": [
+    {
+      "trade_id": "trade-1",
+      "stock_code": "000001.SZ",
+      "volume": 100
+    }
+  ],
+  "events": [
+    {
+      "type": "stock_order",
+      "data": {
+        "order_id": "order-1"
+      }
+    }
+  ]
+}

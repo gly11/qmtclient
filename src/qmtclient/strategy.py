@@ -1,10 +1,21 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import Any, Protocol
 
-if TYPE_CHECKING:
-    from qmtclient.client import QmtClient
+
+class StrategyClient(Protocol):
+    def rpc(
+        self,
+        target: str,
+        method: str,
+        args: list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any: ...
+
+    def orders(self, limit: int | None = None) -> list[dict[str, Any]]: ...
+
+    def trades(self, limit: int | None = None) -> list[dict[str, Any]]: ...
 
 
 def stock_account(account_id: str, account_type: str = "STOCK") -> dict[str, str]:
@@ -16,7 +27,7 @@ def stock_account(account_id: str, account_type: str = "STOCK") -> dict[str, str
 
 
 class MarketFacade:
-    def __init__(self, client: QmtClient) -> None:
+    def __init__(self, client: StrategyClient) -> None:
         self._client = client
 
     def get_full_tick(self, codes: Sequence[str]) -> dict[str, Any]:
@@ -33,7 +44,7 @@ class MarketFacade:
 
 
 class AccountFacade:
-    def __init__(self, client: QmtClient) -> None:
+    def __init__(self, client: StrategyClient) -> None:
         self._client = client
 
     def infos(self) -> Any:
@@ -86,7 +97,7 @@ class AccountFacade:
 
 
 class TradingFacade:
-    def __init__(self, client: QmtClient) -> None:
+    def __init__(self, client: StrategyClient) -> None:
         self._client = client
 
     def order_stock(

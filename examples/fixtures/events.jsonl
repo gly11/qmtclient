@@ -1,0 +1,3 @@
+{"type":"heartbeat","data":{}}
+{"type":"stock_order","data":{"order_id":"order-1"}}
+{"type":"stock_trade","data":{"trade_id":"trade-1","stock_code":"000001.SZ","volume":100}}

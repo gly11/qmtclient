@@ -9,12 +9,16 @@ from qmtclient.errors import (
     QmtProtocolError,
     QmtRpcError,
 )
+from qmtclient.fake import FakeQmtClient
+from qmtclient.fixtures import EventReplay, load_fixture, load_json, load_jsonl
 from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade, stock_account
 
 __version__ = "0.1.0.dev0"
 
 __all__ = [
     "AccountFacade",
+    "EventReplay",
+    "FakeQmtClient",
     "MarketFacade",
     "QmtAuthError",
     "QmtClient",
@@ -24,5 +28,8 @@ __all__ = [
     "QmtProtocolError",
     "QmtRpcError",
     "TradingFacade",
+    "load_fixture",
+    "load_json",
+    "load_jsonl",
     "stock_account",
 ]

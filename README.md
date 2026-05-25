@@ -64,6 +64,18 @@ orders = client.account.cached_orders(limit=20)
 
 交易入口也在 `client.trading` 下，但它只负责组织参数并调用 qmtserver。真实交易是否允许执行，仍由 qmtserver 的服务端配置、交易保护、dry-run 和审计逻辑决定。
 
+## 离线策略测试
+
+```python
+from qmtclient import FakeQmtClient
+
+fake = FakeQmtClient.from_fixture("examples/fixtures/offline_strategy.json")
+print(fake.market.get_full_tick(["000001.SZ"]))
+print(fake.account.cached_orders())
+```
+
+`FakeQmtClient` 与 JSON/JSONL fixtures 可用于没有 qmtserver、MiniQMT 或 `xtquant` 的单元测试。事件回放见 [离线策略测试](docs/offline-testing.md)。
+
 ## 设计原则
 
 - 客户端电脑不需要 MiniQMT。
@@ -76,6 +88,7 @@ orders = client.account.cached_orders(limit=20)
 
 - [远程连接指南](docs/connection.md)
 - [策略友好接口](docs/strategy.md)
+- [离线策略测试](docs/offline-testing.md)
 - [路线图](docs/roadmap.md)
 
 ## 开发检查

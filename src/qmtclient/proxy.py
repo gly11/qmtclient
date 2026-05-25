@@ -1,13 +1,20 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any, Protocol
 
-if TYPE_CHECKING:
-    from qmtclient.client import QmtClient
+
+class RpcClient(Protocol):
+    def rpc(
+        self,
+        target: str,
+        method: str,
+        args: list[Any] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any: ...
 
 
 class RpcTargetProxy:
-    def __init__(self, client: QmtClient, target: str) -> None:
+    def __init__(self, client: RpcClient, target: str) -> None:
         self._client = client
         self._target = target
 
@@ -18,7 +25,7 @@ class RpcTargetProxy:
 
 
 class RpcMethodProxy:
-    def __init__(self, client: QmtClient, target: str, method: str) -> None:
+    def __init__(self, client: RpcClient, target: str, method: str) -> None:
         self._client = client
         self._target = target
         self._method = method
