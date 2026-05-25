@@ -13,6 +13,7 @@ from qmtclient.errors import (
 )
 from qmtclient.events import ConnectFactory, EventStream
 from qmtclient.proxy import RpcTargetProxy
+from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade
 
 API_VERSION = "v1"
 
@@ -43,6 +44,9 @@ class QmtClient:
         )
         self.xtdata = RpcTargetProxy(self, "xtdata")
         self.trader = RpcTargetProxy(self, "trader")
+        self.market = MarketFacade(self)
+        self.account = AccountFacade(self)
+        self.trading = TradingFacade(self)
 
     def close(self) -> None:
         if self._owns_http_client:

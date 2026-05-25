@@ -53,6 +53,17 @@ for event in client.events(types=["stock_order", "stock_trade"]):
     print(event)
 ```
 
+## 策略友好接口
+
+```python
+ticks = client.market.get_full_tick(["000001.SZ"])
+asset = client.account.asset("example-account")
+positions = client.account.positions("example-account")
+orders = client.account.cached_orders(limit=20)
+```
+
+交易入口也在 `client.trading` 下，但它只负责组织参数并调用 qmtserver。真实交易是否允许执行，仍由 qmtserver 的服务端配置、交易保护、dry-run 和审计逻辑决定。
+
 ## 设计原则
 
 - 客户端电脑不需要 MiniQMT。
@@ -64,6 +75,7 @@ for event in client.events(types=["stock_order", "stock_trade"]):
 ## 文档
 
 - [远程连接指南](docs/connection.md)
+- [策略友好接口](docs/strategy.md)
 - [路线图](docs/roadmap.md)
 
 ## 开发检查

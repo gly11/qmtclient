@@ -15,6 +15,7 @@ qmtclient 已经从 `qmtserver.client` 拆分为独立包骨架。
 - 客户端侧类型化异常。
 - RPC 和事件示例。
 - LAN、VPN、反向代理远程连接示例。
+- 策略友好 facade：`client.market`、`client.account`、`client.trading`。
 - 单元测试使用 `httpx.MockTransport` 和 fake WebSocket，不需要真实 qmtserver。
 
 ## Python 支持
@@ -135,6 +136,8 @@ qmtclient/
 - `uv run ty check` 通过。
 
 ### M2: Strategy Facade
+
+状态：已完成。
 
 目标：提供更适合策略代码使用的 API，同时不扩大客户端安全边界。
 
