@@ -34,12 +34,6 @@ qmtclient/
 `-- fixtures.py     # fixture loading / EventReplay
 ```
 
-## 版本
-
-当前版本：`0.1.0`。
-
-`0.1.x` 继续以 qmtserver `/v1` 兼容为主。后续如果 qmtserver 引入新 API 版本，先补兼容性文档和测试，再扩展客户端接口。
-
 ## 当前状态
 
 `0.1.0` 已具备：
@@ -49,20 +43,12 @@ qmtclient/
 - `FakeQmtClient`、fixture loading、`EventReplay`。
 - 中文文档、示例、CI、typed package。
 
-## 后续方向
+## 未来方向
 
 - 跟随 qmtserver `/v1` 补充常用只读 helper。
 - 根据真实策略使用反馈微调 facade 命名和返回结构。
+- 增加连接诊断，例如 HTTP、token、qmt status、RPC methods、WebSocket heartbeat 检查。
+- 在 qmtserver 提供缓存 API 后，增加 `client.cache` 封装。
+- 探索客户端本地策略缓存，用于 fixture、回放和离线测试辅助。
 - 扩展 fixture/event replay 示例。
 - 当 qmtserver 引入新 API 版本时，先补兼容性测试和文档。
-
-## 发布检查
-
-```powershell
-uv run python -m unittest discover -s tests
-uv run ruff check .
-uv run ruff format --check .
-uv run ty check
-uv build
-uv tool run twine check dist/*
-```
