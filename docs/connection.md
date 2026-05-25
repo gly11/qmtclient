@@ -81,7 +81,7 @@ client = QmtClient(
 
 ## qmtserver `/v1` 兼容性
 
-qmtclient `0.1.0` 之前的基础 SDK 目标兼容 qmtserver `/v1`：
+qmtclient 在正式 `0.1.0` 发布前，基础 SDK 目标兼容 qmtserver `/v1`：
 
 - `GET /v1/health`
 - `GET /v1/qmt/status`

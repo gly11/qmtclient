@@ -94,6 +94,17 @@ qmtclient/
 5. 增加 event replay，用于订单/成交回调测试。
 6. 文档说明 qmtclient 与 qmtserver 的版本兼容关系。
 
+## 版本策略
+
+当前开发版本使用 `0.1.0.dev0`。`0.1.0` 是 M1-M4 全部完成并通过 release readiness 检查后的第一个正式目标版本，不代表任一单独 milestone 完成。
+
+版本推进规则：
+
+- M1-M3 完成时只更新 milestone 状态和开发文档，不切正式版本。
+- M4 完成时执行完整 release readiness 检查。
+- 只有 M4 验收通过后，才把版本从 `0.1.0.dev0` 切到 `0.1.0`。
+- 如果 M2/M3/M4 过程中需要发布测试包，可以使用 PEP 440 预发布或开发版本，例如 `0.1.0.dev1`、`0.1.0a1`。
+
 ## Milestones
 
 ### M1: Base SDK 稳定
