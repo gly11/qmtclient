@@ -1,4 +1,4 @@
-﻿# 兼容性说明
+# 兼容性说明
 
 本文从 qmtclient 视角说明 qmtclient 与 qmtserver 的兼容关系。
 
@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | `0.1.0` | `/v1` | 目标兼容 | 第一个独立客户端版本，覆盖基础 RPC、WebSocket、策略 facade、fake client、fixture 和 event replay。 |
 
-qmtclient `0.1.0` 只承诺兼容 qmtserver 的 `/v1` API。旧的无版本路径可能仍由 qmtserver 保留，但 qmtclient 默认使用 `/v1`。
+qmtclient `0.1.0` 只承诺兼容 qmtserver 的 `/v1` API。客户端 CI 覆盖 Windows、macOS、Linux 和 Python 3.10-3.14。旧的无版本路径可能仍由 qmtserver 保留，但 qmtclient 默认使用 `/v1`。
 
 ## 支持的 qmtserver `/v1` 能力
 

@@ -1,4 +1,4 @@
-﻿# qmtclient
+# qmtclient
 
 qmtclient 是面向远程 qmtserver 网关的轻量 Python 客户端 SDK。
 
@@ -20,11 +20,11 @@ MiniQMT gateway computer
 
 ## 当前状态
 
-本包从 `qmtserver.client` 拆分而来，目前处于 pre-alpha 阶段。qmtclient 不直接连接 MiniQMT，也不依赖 `xtquant`。
+本包从 `qmtserver.client` 拆分而来，目前处于 alpha 阶段。qmtclient 不直接连接 MiniQMT，也不依赖 `xtquant`。
 
 ## Python 支持
 
-qmtclient 支持 Python `>=3.10`，不设置 `<3.14` 上限。qmtserver 可能受 Windows、MiniQMT 或 `xtquant` 约束，但 qmtclient 是纯远程 SDK。
+qmtclient 支持 Python `>=3.10`，当前 CI 覆盖 Python 3.10、3.11、3.12、3.13 和 3.14，不设置 `<3.14` 上限。qmtserver 可能受 Windows、MiniQMT 或 `xtquant` 约束，但 qmtclient 是纯远程 SDK。
 
 ## 开发安装
 
@@ -93,6 +93,7 @@ print(fake.account.cached_orders())
 - [发布准备](docs/release.md)
 - [路线图](docs/roadmap.md)
 - [更新日志](CHANGELOG.md)
+- [贡献指南](CONTRIBUTING.md)
 
 ## 开发检查
 

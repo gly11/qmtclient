@@ -1,4 +1,4 @@
-﻿# 发布准备
+# 发布准备
 
 本文记录 qmtclient `0.1.0` 的 release readiness 要求。
 
@@ -21,7 +21,16 @@ uv run ruff check .
 uv run ruff format --check .
 uv run ty check
 uv build
+uv tool run twine check dist/*
 ```
+
+## CI 覆盖
+
+GitHub Actions CI 覆盖：
+
+- Windows、macOS、Linux。
+- Python 3.10、3.11、3.12、3.13、3.14。
+- 单元测试、ruff、格式检查、ty 和包构建检查。
 
 ## 包检查
 
