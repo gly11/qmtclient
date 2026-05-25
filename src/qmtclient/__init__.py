@@ -13,7 +13,7 @@ from qmtclient.fake import FakeQmtClient
 from qmtclient.fixtures import EventReplay, load_fixture, load_json, load_jsonl
 from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade, stock_account
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 
 __all__ = [
     "AccountFacade",

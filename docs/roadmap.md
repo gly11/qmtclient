@@ -98,13 +98,13 @@ qmtclient/
 
 ## 版本策略
 
-当前开发版本使用 `0.1.0.dev0`。`0.1.0` 是 M1-M4 全部完成并通过 release readiness 检查后的第一个正式目标版本，不代表任一单独 milestone 完成。
+当前版本是 `0.1.0`。`0.1.0` 是 M1-M4 全部完成并通过 release readiness 检查后的第一个正式目标版本，不代表任一单独 milestone 完成。
 
 版本推进规则：
 
 - M1-M3 完成时只更新 milestone 状态和开发文档，不切正式版本。
-- M4 完成时执行完整 release readiness 检查。
-- 只有 M4 验收通过后，才把版本从 `0.1.0.dev0` 切到 `0.1.0`。
+- M4 完成时执行完整 release readiness 检查，并把版本从 `0.1.0.dev0` 切到 `0.1.0`。
+- `0.1.0` 发布后，补丁版本继续保持 qmtserver `/v1` 兼容。
 - 如果 M2/M3/M4 过程中需要发布测试包，可以使用 PEP 440 预发布或开发版本，例如 `0.1.0.dev1`、`0.1.0a1`。
 
 ## Milestones
@@ -182,6 +182,8 @@ qmtclient/
 - fixture 不包含真实 token、真实账号或个人路径。
 
 ### M4: 兼容性与发布准备
+
+状态：已完成。
 
 目标：让 qmtclient 具备独立 pre-alpha/alpha 发布条件。
 

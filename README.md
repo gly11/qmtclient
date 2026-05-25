@@ -89,7 +89,10 @@ print(fake.account.cached_orders())
 - [远程连接指南](docs/connection.md)
 - [策略友好接口](docs/strategy.md)
 - [离线策略测试](docs/offline-testing.md)
+- [兼容性说明](docs/compatibility.md)
+- [发布准备](docs/release.md)
 - [路线图](docs/roadmap.md)
+- [更新日志](CHANGELOG.md)
 
 ## 开发检查
 
