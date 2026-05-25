@@ -14,6 +14,7 @@ qmtclient 已经从 `qmtserver.client` 拆分为独立包骨架。
 - WebSocket 事件迭代器。
 - 客户端侧类型化异常。
 - RPC 和事件示例。
+- LAN、VPN、反向代理远程连接示例。
 - 单元测试使用 `httpx.MockTransport` 和 fake WebSocket，不需要真实 qmtserver。
 
 ## Python 支持
@@ -97,6 +98,8 @@ qmtclient/
 
 ### M1: Base SDK 稳定
 
+状态：已完成。
+
 目标：把 `QmtClient` 做成小而可靠的 qmtserver `/v1` 客户端。
 
 范围：
@@ -108,6 +111,7 @@ qmtclient/
 - 在服务端返回时保留 `error.code`、`message` 和 `request_id`。
 - 增加 LAN、VPN、反向代理场景的远程连接示例。
 - 文档说明 `base_url`、`token` 和 `api_version` 行为。
+- 对非 JSON 服务端响应提供客户端侧类型化错误。
 
 验收：
 

@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from qmtclient import QmtAuthError, QmtClient, QmtRpcError
+from qmtclient import QmtAuthError, QmtClient, QmtHttpError, QmtProtocolError, QmtRpcError
 from qmtclient.events import build_ws_url
 
 
@@ -79,6 +79,41 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "UNAUTHORIZED")
         self.assertEqual(raised.exception.message, "bad token")
         self.assertEqual(raised.exception.request_id, "auth-request")
+
+    def test_http_error_handles_non_json_response(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                502,
+                headers={"X-Request-ID": "gateway-error"},
+                text="bad gateway",
+            )
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtHttpError) as raised:
+            client.status()
+
+        self.assertEqual(raised.exception.status_code, 502)
+        self.assertEqual(raised.exception.code, "HTTP_ERROR")
+        self.assertEqual(raised.exception.message, "bad gateway")
+        self.assertEqual(raised.exception.request_id, "gateway-error")
+
+    def test_successful_non_json_response_raises_protocol_error(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                headers={"X-Request-ID": "protocol-error"},
+                text="ok",
+            )
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtProtocolError) as raised:
+            client.health()
+
+        self.assertEqual(raised.exception.status_code, 200)
+        self.assertEqual(raised.exception.response_text, "ok")
+        self.assertEqual(raised.exception.request_id, "protocol-error")
 
     def test_dynamic_proxy_calls_rpc(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:

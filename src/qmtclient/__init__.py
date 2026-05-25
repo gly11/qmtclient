@@ -6,6 +6,7 @@ from qmtclient.errors import (
     QmtClientError,
     QmtConnectionError,
     QmtHttpError,
+    QmtProtocolError,
     QmtRpcError,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "QmtClientError",
     "QmtConnectionError",
     "QmtHttpError",
+    "QmtProtocolError",
     "QmtRpcError",
 ]

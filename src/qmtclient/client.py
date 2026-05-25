@@ -4,7 +4,13 @@ from typing import Any
 
 import httpx
 
-from qmtclient.errors import QmtAuthError, QmtConnectionError, QmtHttpError, QmtRpcError
+from qmtclient.errors import (
+    QmtAuthError,
+    QmtConnectionError,
+    QmtHttpError,
+    QmtProtocolError,
+    QmtRpcError,
+)
 from qmtclient.events import ConnectFactory, EventStream
 from qmtclient.proxy import RpcTargetProxy
 
@@ -134,8 +140,25 @@ class QmtClient:
         except httpx.RequestError as exc:
             raise QmtConnectionError(str(exc)) from exc
 
-        response_body = _response_json(response)
         request_id = response.headers.get("X-Request-ID")
+        try:
+            response_body = _response_json(response)
+        except ValueError as exc:
+            if response.status_code >= 400:
+                raise QmtHttpError(
+                    response.status_code,
+                    response.text,
+                    {"data": response.text},
+                    code="HTTP_ERROR",
+                    request_id=request_id,
+                ) from exc
+            raise QmtProtocolError(
+                "qmtserver returned a non-JSON response",
+                status_code=response.status_code,
+                response_text=response.text,
+                request_id=request_id,
+            ) from exc
+
         if response.status_code == 401:
             code, message = _http_error_detail(response_body, "UNAUTHORIZED", "Unauthorized")
             raise QmtAuthError(

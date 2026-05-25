@@ -44,6 +44,8 @@ print(client.rpc("xtdata", "get_full_tick", [["000001.SZ"]]))
 print(client.xtdata.get_full_tick(["000001.SZ"]))
 ```
 
+`base_url` 写 qmtserver 服务根地址即可，默认会自动使用 `/v1` API 前缀。真实 token 不要写进源码，建议从环境变量读取。LAN、VPN 和反向代理配置见 [远程连接指南](docs/connection.md)。
+
 ## 事件消费
 
 ```python
@@ -61,6 +63,7 @@ for event in client.events(types=["stock_order", "stock_trade"]):
 
 ## 文档
 
+- [远程连接指南](docs/connection.md)
 - [路线图](docs/roadmap.md)
 
 ## 开发检查
