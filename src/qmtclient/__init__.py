@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+from qmtclient.client import QmtClient
+from qmtclient.errors import (
+    QmtAuthError,
+    QmtClientError,
+    QmtConnectionError,
+    QmtHttpError,
+    QmtRpcError,
+)
+
+__version__ = "0.1.0"
+
+__all__ = [
+    "QmtAuthError",
+    "QmtClient",
+    "QmtClientError",
+    "QmtConnectionError",
+    "QmtHttpError",
+    "QmtRpcError",
+]
