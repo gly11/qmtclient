@@ -17,6 +17,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check tag matches package version
+        shell: bash
+        run: |
+          PACKAGE_VERSION=$(python -c "import pathlib, tomllib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package version $PACKAGE_VERSION"
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
