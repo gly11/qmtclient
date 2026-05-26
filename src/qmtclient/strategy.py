@@ -7,6 +7,8 @@ from qmtclient.models import MarketResponse, normalize_bars, normalize_instrumen
 
 
 class StrategyClient(Protocol):
+    def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]: ...
+
     def rpc(
         self,
         target: str,
@@ -36,6 +38,10 @@ class MarketFacade:
         data = self._client.rpc("xtdata", "get_full_tick", [list(codes)])
         return data if isinstance(data, dict) else {}
 
+    def capabilities(self) -> dict[str, Any]:
+        response = self._client._request("GET", "/market/capabilities")
+        return _response_data(response)
+
     def daily_bars(
         self,
         codes: Sequence[str],
@@ -45,6 +51,15 @@ class MarketFacade:
         count: int | None = None,
         dividend_type: str | None = None,
     ) -> MarketResponse:
+        if count is None:
+            response = self._client._request(
+                "GET",
+                "/market/bars/daily",
+                params=_stable_market_params(codes, start_time, end_time, dividend_type),
+            )
+            _raise_api_error(response, "market", "daily_bars")
+            return normalize_bars(response, kind="daily_bars", codes=codes, period="1d")
+
         period = "1d"
         data = self._client.rpc(
             "xtdata",
@@ -63,6 +78,13 @@ class MarketFacade:
         count: int | None = None,
         dividend_type: str | None = None,
     ) -> MarketResponse:
+        if count is None:
+            params = _stable_market_params(codes, start_time, end_time, dividend_type)
+            params["period"] = period
+            response = self._client._request("GET", "/market/bars/intraday", params=params)
+            _raise_api_error(response, "market", "intraday_bars")
+            return normalize_bars(response, kind="intraday_bars", codes=codes, period=period)
+
         data = self._client.rpc(
             "xtdata",
             "get_market_data",
@@ -71,8 +93,29 @@ class MarketFacade:
         return normalize_bars(data, kind="intraday_bars", codes=codes, period=period)
 
     def instruments(self, codes: Sequence[str]) -> MarketResponse:
-        data = self._client.rpc("xtdata", "get_instruments", [list(codes)])
-        return normalize_instruments(data, codes=codes)
+        response = self._client._request(
+            "GET",
+            "/reference/instruments",
+            params={"symbols": ",".join(codes)},
+        )
+        _raise_api_error(response, "reference", "instruments")
+        return normalize_instruments(response, codes=codes)
+
+    def daily_quality(
+        self,
+        codes: Sequence[str],
+        *,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        dividend_type: str | None = None,
+    ) -> dict[str, Any]:
+        response = self._client._request(
+            "GET",
+            "/market/bars/daily/quality",
+            params=_stable_market_params(codes, start_time, end_time, dividend_type),
+        )
+        _raise_api_error(response, "market", "daily_quality")
+        return response
 
     def rpc(
         self,
@@ -101,6 +144,43 @@ def _market_kwargs(
     if dividend_type is not None:
         kwargs["dividend_type"] = dividend_type
     return kwargs
+
+
+def _stable_market_params(
+    codes: Sequence[str],
+    start_time: str | None,
+    end_time: str | None,
+    dividend_type: str | None,
+) -> dict[str, Any]:
+    params: dict[str, Any] = {"symbols": ",".join(codes)}
+    if start_time is not None:
+        params["start"] = start_time
+    if end_time is not None:
+        params["end"] = end_time
+    if dividend_type is not None:
+        params["adjust"] = dividend_type
+    return params
+
+
+def _response_data(response: dict[str, Any]) -> dict[str, Any]:
+    data = response.get("data")
+    return data if isinstance(data, dict) else {}
+
+
+def _raise_api_error(response: dict[str, Any], target: str, method: str) -> None:
+    if response.get("ok", True):
+        return
+    error_value = response.get("error")
+    error = error_value if isinstance(error_value, dict) else {}
+    from qmtclient.errors import QmtRpcError
+
+    raise QmtRpcError(
+        code=str(error.get("code", "API_ERROR")),
+        message=str(error.get("message", "qmtserver API call failed")),
+        target=target,
+        method=method,
+        response=response,
+    )
 
 
 class AccountFacade:

@@ -26,14 +26,14 @@ qmtserver 负责：
 ```text
 qmtclient/
 |-- client.py       # QmtClient
-|-- batch.py        # batch job client
+|-- batch.py        # history download job client
 |-- cache.py        # optional local memory cache
 |-- conversions.py  # optional Pandas / Arrow conversion helpers
 |-- errors.py       # 客户端异常
 |-- events.py       # WebSocket 事件
 |-- models.py       # typed response schema helpers
 |-- proxy.py        # 动态 RPC proxy
-|-- snapshots.py    # snapshot manifest loading / validation
+|-- snapshots.py    # snapshot API client and manifest validation
 |-- strategy.py     # market/account/trading facade
 |-- fake.py         # FakeQmtClient
 `-- fixtures.py     # fixture loading / EventReplay
@@ -41,22 +41,29 @@ qmtclient/
 
 ## 当前状态
 
-`0.1.0` 已具备：
+`0.2.0` 已具备：
 
 - qmtserver `/v1` HTTP RPC 和 WebSocket 客户端。
 - `market`、`account`、`trading` 策略接口。
 - `FakeQmtClient`、fixture loading、`EventReplay`。
 - 中文文档、示例、CI、typed package。
 
+当前工作区已补充 qmtserver `0.3.0` pre-release 适配：
+
+- `client.market` 优先调用稳定 `/v1/market` 和 `/v1/reference` endpoints。
+- `client.batch` 适配 `/v1/jobs/history-download` 和 job result manifest。
+- `client.snapshots` 封装 `/v1/snapshots` registry、manifest 和 quality。
+- `load_snapshot_manifest()` 支持 qmtserver `0.3.0` CSV manifest。
+
 ## 当前能力
 
 qmtclient 已从薄 RPC 封装扩展为稳定、可测、类型清晰的客户端 SDK，为下游策略开发、回测系统和数据管线提供通用支撑。
 
-- 稳定 market facade：`daily_bars`、`intraday_bars`、`instruments`，返回 `schema_version="qmtclient.market.v1"` 的 JSON-friendly response。
+- 稳定 market facade：`daily_bars`、`intraday_bars`、`instruments`、`capabilities` 和 `daily_quality`，返回 JSON-friendly response。
 - 类型和错误契约：提供 market、diagnose、snapshot schema helpers，并区分认证失败、服务不可用、空数据、schema mismatch、可选依赖缺失等错误。
 - 离线测试：`FakeQmtClient` 支持标准 market fixture，示例覆盖 daily、intraday、empty、error 场景。
 - 连接诊断：`diagnose()` 聚合 HTTP、ready、methods 和只读 sample，`check_compatibility()` 检查 client/server API version。
-- 数据工具：`client.batch` 封装批量 job，`load_snapshot_manifest()` 校验 manifest hash 和 row count。
+- 数据工具：`client.batch` 封装 history download job，`client.snapshots` 封装 snapshot registry，`load_snapshot_manifest()` 校验 manifest hash 和 row count。
 - 体验增强：支持有限 retry/backoff、WebSocket reconnect、显式启用的 `MemoryCache`、Pandas/Arrow 延迟导入转换工具。
 
 ## 后续方向

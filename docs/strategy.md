@@ -1,14 +1,16 @@
 ﻿# 策略接口
 
-`client.market`、`client.account`、`client.trading` 是 qmtserver RPC/API 的客户端封装，减少手写 RPC payload。只读行情优先使用稳定 `market` facade；直接 RPC 仍保留为 escape hatch。
+`client.market`、`client.account`、`client.trading` 是 qmtserver RPC/API 的客户端封装，减少手写 RPC payload。只读行情优先使用 qmtserver `0.3.0` 的稳定 market/reference endpoints；直接 RPC 仍保留为 escape hatch。
 
 ## market
 
 ```python
 ticks = client.market.get_full_tick(["000001.SZ", "600000.SH"])
+capabilities = client.market.capabilities()
 daily = client.market.daily_bars(["000001.SZ"], start_time="20260501")
 bars_1m = client.market.intraday_bars(["000001.SZ"], period="1m")
 instruments = client.market.instruments(["000001.SZ"])
+quality = client.market.daily_quality(["000001.SZ"], start_time="2026-01-01", end_time="2026-01-31")
 ```
 
 `daily_bars`、`intraday_bars` 和 `instruments` 返回 JSON-friendly typed response：
@@ -33,6 +35,15 @@ instruments = client.market.instruments(["000001.SZ"])
 ```
 
 空数据会抛出 `QmtDataEmptyError`，字段缺失或类型不匹配会抛出 `QmtSchemaMismatchError`。
+
+默认情况下：
+
+- `daily_bars()` 调用 `/v1/market/bars/daily`。
+- `intraday_bars()` 调用 `/v1/market/bars/intraday`。
+- `instruments()` 调用 `/v1/reference/instruments`。
+- `daily_quality()` 调用 `/v1/market/bars/daily/quality`。
+
+如果 `daily_bars()` 或 `intraday_bars()` 显式传入 `count`，qmtclient 会保留旧 RPC fallback，用于兼容需要 `xtdata.get_market_data` count 语义的调用。
 
 其他 `xtdata` 方法可继续通过 RPC 调用：
 

@@ -38,26 +38,30 @@ class StrategyFacadeTests(unittest.TestCase):
 
     def test_market_daily_bars_returns_typed_response(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
-            payload = json.loads(request.content)
-            self.assertEqual(payload["target"], "xtdata")
-            self.assertEqual(payload["method"], "get_market_data")
-            self.assertEqual(payload["kwargs"]["period"], "1d")
+            self.assertEqual(request.url.path, "/v1/market/bars/daily")
+            self.assertEqual(request.url.params["symbols"], "000001.SZ")
+            self.assertEqual(request.url.params["start"], "20260501")
             return httpx.Response(
                 200,
                 json={
                     "ok": True,
-                    "data": [
-                        {
-                            "code": "000001.SZ",
-                            "date": "2026-05-25",
-                            "open": 10,
-                            "high": 11,
-                            "low": 9,
-                            "close": 10.5,
-                            "volume": 1000,
-                            "amount": 10500,
-                        }
-                    ],
+                    "data": {
+                        "bars": [
+                            {
+                                "symbol": "000001.SZ",
+                                "date": "2026-05-25",
+                                "open": 10,
+                                "high": 11,
+                                "low": 9,
+                                "close": 10.5,
+                                "volume": 1000,
+                                "amount": 10500,
+                                "meta": {},
+                            }
+                        ]
+                    },
+                    "error": None,
+                    "meta": {"schema": "market.bars.v1", "row_count": 1},
                 },
             )
 
@@ -72,7 +76,11 @@ class StrategyFacadeTests(unittest.TestCase):
 
     def test_market_intraday_bars_rejects_empty_data(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(200, json={"ok": True, "data": []})
+            self.assertEqual(request.url.path, "/v1/market/bars/intraday")
+            return httpx.Response(
+                200,
+                json={"ok": True, "data": {"bars": []}, "error": None, "meta": {}},
+            )
 
         client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
 
@@ -81,7 +89,16 @@ class StrategyFacadeTests(unittest.TestCase):
 
     def test_market_instruments_rejects_schema_mismatch(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(200, json={"ok": True, "data": [{"name": "missing-code"}]})
+            self.assertEqual(request.url.path, "/v1/reference/instruments")
+            return httpx.Response(
+                200,
+                json={
+                    "ok": True,
+                    "data": {"instruments": [{"name": "missing-code"}]},
+                    "error": None,
+                    "meta": {},
+                },
+            )
 
         client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
 

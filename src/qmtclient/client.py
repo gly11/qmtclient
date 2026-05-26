@@ -17,6 +17,7 @@ from qmtclient.errors import (
 from qmtclient.events import ConnectFactory, EventStream
 from qmtclient.models import DIAGNOSE_SCHEMA_VERSION, DiagnoseCheck, DiagnoseResponse
 from qmtclient.proxy import RpcTargetProxy
+from qmtclient.snapshots import SnapshotClient
 from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade
 
 API_VERSION = "v1"
@@ -58,6 +59,7 @@ class QmtClient:
         self.account = AccountFacade(self)
         self.trading = TradingFacade(self)
         self.batch = BatchClient(self)
+        self.snapshots = SnapshotClient(self)
         self.cache = MemoryCache(enabled=cache_enabled)
 
     def close(self) -> None:

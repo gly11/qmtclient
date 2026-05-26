@@ -72,6 +72,56 @@ class FakeQmtClient:
     def methods(self) -> dict[str, Any]:
         return deepcopy(self._methods)
 
+    def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+        if method == "GET" and path == "/market/capabilities":
+            return {
+                "ok": True,
+                "data": {
+                    "schema_versions": ["market.bars.v1"],
+                    "periods": ["1m", "5m", "1d"],
+                    "adjust_modes": ["none"],
+                },
+                "error": None,
+                "meta": {},
+            }
+        if method == "GET" and path == "/market/bars/daily":
+            return _market_response(self._market.get("daily_bars"))
+        if method == "GET" and path == "/market/bars/intraday":
+            return _market_response(self._market.get("intraday_bars"))
+        if method == "GET" and path == "/reference/instruments":
+            return {
+                "ok": True,
+                "data": {"instruments": deepcopy(self._market.get("instruments", []))},
+                "error": None,
+                "meta": {"schema": "reference.instruments.v1"},
+            }
+        if method == "GET" and path == "/market/bars/daily/quality":
+            return {
+                "ok": True,
+                "data": {
+                    "missing_dates": [],
+                    "duplicate_rows": [],
+                    "price_anomalies": [],
+                    "volume_anomalies": [],
+                },
+                "error": None,
+                "meta": {"schema": "market.quality.v1"},
+            }
+        raise QmtRpcError(
+            code="METHOD_NOT_ALLOWED",
+            message=f"Fake request result is not configured: {method} {path}",
+            target="api",
+            method=path,
+            response={
+                "ok": False,
+                "data": None,
+                "error": {
+                    "code": "METHOD_NOT_ALLOWED",
+                    "message": f"Fake request result is not configured: {method} {path}",
+                },
+            },
+        )
+
     def rpc(
         self,
         target: str,
@@ -153,6 +203,15 @@ def _methods_from_rpc_results(rpc_results: dict[str, Any]) -> dict[str, list[str
 def _limited(items: list[dict[str, Any]], limit: int | None) -> list[dict[str, Any]]:
     selected = items if limit is None else items[:limit]
     return deepcopy(selected)
+
+
+def _market_response(rows: Any) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "data": {"bars": deepcopy(rows or [])},
+        "error": None,
+        "meta": {"schema": "market.bars.v1"},
+    }
 
 
 def _dict_or_none(value: Any) -> dict[str, Any] | None:

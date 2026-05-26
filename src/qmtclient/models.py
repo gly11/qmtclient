@@ -64,13 +64,20 @@ def normalize_bars(
     codes: Iterable[str],
     period: str,
 ) -> MarketResponse:
+    source_meta = (
+        raw.get("meta") if isinstance(raw, dict) and isinstance(raw.get("meta"), dict) else {}
+    )
     rows = [_normalize_bar(item, kind=kind) for item in _iter_market_rows(raw, codes)]
     if not rows:
         raise QmtDataEmptyError(
             "qmtserver returned no market bars",
             schema_version=MARKET_SCHEMA_VERSION,
         )
-    return market_response(kind, rows, {"codes": list(codes), "period": period})
+    return market_response(
+        kind,
+        rows,
+        {"codes": list(codes), "period": period, "source_meta": source_meta},
+    )
 
 
 def normalize_instruments(raw: Any, *, codes: Iterable[str]) -> MarketResponse:
@@ -85,6 +92,10 @@ def normalize_instruments(raw: Any, *, codes: Iterable[str]) -> MarketResponse:
 
 def _iter_market_rows(raw: Any, codes: Iterable[str]) -> list[dict[str, Any]]:
     data = raw.get("data") if isinstance(raw, dict) and "data" in raw else raw
+    if isinstance(data, dict) and isinstance(data.get("bars"), list):
+        return [item for item in data["bars"] if isinstance(item, dict)]
+    if isinstance(data, dict) and isinstance(data.get("instruments"), list):
+        return [item for item in data["instruments"] if isinstance(item, dict)]
     if isinstance(data, list):
         return [item for item in data if isinstance(item, dict)]
     if isinstance(data, dict):
@@ -109,14 +120,18 @@ def _with_code(item: dict[str, Any], code: str) -> dict[str, Any]:
 
 def _normalize_bar(item: dict[str, Any], *, kind: BarKind) -> dict[str, Any]:
     required_time = "date" if kind == "daily_bars" else "datetime"
-    if "code" not in item or required_time not in item:
+    time_value = item.get(required_time)
+    if kind == "intraday_bars" and time_value is None:
+        time_value = item.get("timestamp")
+    code_value = item.get("code", item.get("symbol"))
+    if code_value is None or time_value is None:
         raise QmtSchemaMismatchError(
             f"market bar requires code and {required_time}",
             schema_version=MARKET_SCHEMA_VERSION,
         )
     return {
-        "code": str(item["code"]),
-        required_time: str(item[required_time]),
+        "code": str(code_value),
+        required_time: str(time_value),
         "open": _number(item, "open"),
         "high": _number(item, "high"),
         "low": _number(item, "low"),
@@ -127,13 +142,14 @@ def _normalize_bar(item: dict[str, Any], *, kind: BarKind) -> dict[str, Any]:
 
 
 def _normalize_instrument(item: dict[str, Any]) -> dict[str, Any]:
-    if "code" not in item:
+    code_value = item.get("code", item.get("symbol"))
+    if code_value is None:
         raise QmtSchemaMismatchError(
             "instrument requires code",
             schema_version=MARKET_SCHEMA_VERSION,
         )
     return {
-        "code": str(item["code"]),
+        "code": str(code_value),
         "name": str(item.get("name", "")),
         "exchange": str(item.get("exchange", "")),
         "instrument_type": str(item.get("instrument_type", item.get("type", ""))),

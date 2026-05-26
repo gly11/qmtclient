@@ -18,7 +18,7 @@ from qmtclient.errors import (
 from qmtclient.fake import FakeQmtClient
 from qmtclient.fixtures import EventReplay, load_fixture, load_json, load_jsonl
 from qmtclient.models import DIAGNOSE_SCHEMA_VERSION, MARKET_SCHEMA_VERSION
-from qmtclient.snapshots import load_snapshot_manifest
+from qmtclient.snapshots import SnapshotClient, load_snapshot_manifest
 from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade, stock_account
 
 __version__ = "0.2.0"
@@ -42,6 +42,7 @@ __all__ = [
     "QmtRpcError",
     "QmtSchemaMismatchError",
     "QmtServerUnavailableError",
+    "SnapshotClient",
     "TradingFacade",
     "load_fixture",
     "load_json",
