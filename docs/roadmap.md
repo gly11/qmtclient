@@ -41,15 +41,12 @@ qmtclient/
 
 ## 当前状态
 
-`0.2.0` 已具备：
+`0.3.0` 已具备：
 
 - qmtserver `/v1` HTTP RPC 和 WebSocket 客户端。
 - `market`、`account`、`trading` 策略接口。
 - `FakeQmtClient`、fixture loading、`EventReplay`。
 - 中文文档、示例、CI、typed package。
-
-当前工作区已补充 qmtserver `0.3.0` pre-release 适配：
-
 - `client.market` 优先调用稳定 `/v1/market` 和 `/v1/reference` endpoints。
 - `client.batch` 适配 `/v1/jobs/history-download` 和 job result manifest。
 - `client.snapshots` 封装 `/v1/snapshots` registry、manifest 和 quality。
@@ -82,12 +79,12 @@ qmtclient 的默认开发验收不要求连接真实 qmtserver、MiniQMT 或 `xt
 
 - 单元测试：必须使用 `httpx.MockTransport`、fake WebSocket、`FakeQmtClient` 或 fixture，覆盖 SDK 逻辑、错误分类和数据解析。
 - 契约测试：必须使用固定 fixture 或 mock response，验证 market response、diagnose response、manifest 和 schema version 的稳定结构。
-- 真实 qmtserver smoke：可选手动执行，覆盖 `health`、`status`、`methods`、`diagnose()` 和一个只读 market sample；M5 可追加批量/snapshot sample。
+- 真实 qmtserver smoke：可选手动执行，覆盖 `health`、`status`、`methods`、`diagnose()`、只读 market sample，以及批量/snapshot sample。
 - 真实 MiniQMT 行为：由 qmtserver 负责验证；qmtclient 只验证客户端协议、参数组织、返回解析和错误处理。
 
 真实 qmtserver smoke 不得使用真实 token、真实账号或个人路径写入仓库，也不得绕过 qmtserver 的 token、RPC allowlist、透明 RPC 开关或交易保护。
 
-每个 milestone 完成前至少运行：
+发布或交付前至少运行：
 
 ```powershell
 uv run python -m unittest discover -s tests

@@ -1,9 +1,9 @@
 ﻿# 更新日志
 
-## Unreleased
+## 0.3.0
 
-- 适配 qmtserver `0.3.0` pre-release：`client.market` 优先使用稳定
-  `/v1/market` 与 `/v1/reference` endpoints。
+- 适配 qmtserver `0.3.0`：`client.market` 优先使用稳定 `/v1/market` 与
+  `/v1/reference` endpoints。
 - `client.batch` 适配 `/v1/jobs/history-download` 和 job result manifest。
 - 新增 `client.snapshots`，封装 snapshot create/list/manifest/quality。
 - `load_snapshot_manifest()` 支持 qmtserver `0.3.0` CSV manifest 的 hash 和 row count 校验。
