@@ -1,5 +1,11 @@
 ﻿# 更新日志
 
+## Unreleased
+
+- 新增诊断优先 CLI：`check`、`diagnose`、`methods`、`ws-check`、
+  `market-capabilities`、`snapshot-verify`、`fixture-check`。
+- 更新 CLI、兼容性和 README 文档。
+
 ## 0.3.0
 
 - 适配 qmtserver `0.3.0`：`client.market` 优先使用稳定 `/v1/market` 与

@@ -5,6 +5,7 @@
 | `0.1.0` | `/v1` | 基础 RPC、WebSocket、策略接口、fake client、fixture、event replay。 |
 | `0.2.0` | `/v1` | 稳定 market facade、诊断、retry/backoff、WebSocket reconnect、MemoryCache 和转换 helper。 |
 | `0.3.0` | `/v1` | 适配 qmtserver `0.3.0` 的稳定 market、history job、snapshot 和 quality/reference endpoints。 |
+| Unreleased | `/v1` | 新增诊断优先 CLI，覆盖连接检查、methods、WebSocket、market capabilities 和本地文件校验。 |
 
 qmtclient 默认使用 `/v1`。旧的无版本路径不作为客户端兼容目标。
 
@@ -44,6 +45,16 @@ SDK 入口：
 - `load_json` / `load_jsonl` / `load_fixture`
 - `load_snapshot_manifest`
 - `EventReplay`
+
+CLI 覆盖范围：
+
+- `qmtclient check`
+- `qmtclient diagnose`
+- `qmtclient methods`
+- `qmtclient ws-check`
+- `qmtclient market-capabilities`
+- `qmtclient snapshot-verify`
+- `qmtclient fixture-check`
 
 ## 数据契约
 

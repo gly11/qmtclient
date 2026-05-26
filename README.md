@@ -75,6 +75,16 @@ created = client.snapshots.create(
 )
 ```
 
+## CLI
+
+```powershell
+qmtclient check --base-url http://192.168.1.10:8000 --token-env QMTCLIENT_TOKEN
+qmtclient diagnose --sample-code 000001.SZ --json
+qmtclient snapshot-verify .\snapshot\manifest.json
+```
+
+CLI 只做诊断、只读冒烟检查和本地文件校验，不提供真实交易快捷入口。
+
 ## 事件
 
 ```python
@@ -104,7 +114,7 @@ print(fake.market.daily_bars(["000001.SZ"]))
 - [策略接口](docs/strategy.md)
 - [离线测试](docs/offline-testing.md)
 - [数据工具](docs/data-tools.md)
-- [CLI 设计计划](docs/cli.md)
+- [CLI](docs/cli.md)
 - [兼容性](docs/compatibility.md)
 - [发布检查](docs/release.md)
 - [路线图](docs/roadmap.md)
