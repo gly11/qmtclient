@@ -14,7 +14,17 @@ qmtclient  -- HTTP RPC / WebSocket / token -->  qmtserver + MiniQMT + xtquant
 
 ## 安装
 
+使用 PyPI 安装：
+
 ```powershell
+uv pip install qmtclient
+```
+
+开发本仓库：
+
+```powershell
+git clone https://github.com/gly11/qmtclient.git
+cd qmtclient
 uv sync
 ```
 
