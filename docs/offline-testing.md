@@ -33,9 +33,19 @@ fixture 根对象支持：
 - `health`
 - `status`
 - `rpc`
+- `market`
 - `orders`
 - `trades`
 - `events`
+
+标准 market fixture 示例：
+
+- `examples/fixtures/market_daily.json`
+- `examples/fixtures/market_intraday.json`
+- `examples/fixtures/market_empty.json`
+- `examples/fixtures/market_error.json`
+
+`market.daily_bars`、`market.intraday_bars` 和 `market.instruments` 会被 `FakeQmtClient` 映射到稳定 `client.market` facade，用于覆盖正常、空数据和 schema 错误场景。
 
 只使用示例账号、示例 URL 和示例 token。
 

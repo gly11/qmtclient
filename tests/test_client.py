@@ -7,7 +7,13 @@ from typing import Any
 
 import httpx
 
-from qmtclient import QmtAuthError, QmtClient, QmtHttpError, QmtProtocolError, QmtRpcError
+from qmtclient import (
+    QmtAuthError,
+    QmtClient,
+    QmtProtocolError,
+    QmtRpcError,
+    QmtServerUnavailableError,
+)
 from qmtclient.events import build_ws_url
 
 
@@ -80,7 +86,7 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(raised.exception.message, "bad token")
         self.assertEqual(raised.exception.request_id, "auth-request")
 
-    def test_http_error_handles_non_json_response(self) -> None:
+    def test_server_unavailable_handles_non_json_response(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(
                 502,
@@ -90,11 +96,11 @@ class ClientTests(unittest.TestCase):
 
         client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
 
-        with self.assertRaises(QmtHttpError) as raised:
+        with self.assertRaises(QmtServerUnavailableError) as raised:
             client.status()
 
         self.assertEqual(raised.exception.status_code, 502)
-        self.assertEqual(raised.exception.code, "HTTP_ERROR")
+        self.assertEqual(raised.exception.code, "SERVER_UNAVAILABLE")
         self.assertEqual(raised.exception.message, "bad gateway")
         self.assertEqual(raised.exception.request_id, "gateway-error")
 
@@ -167,6 +173,50 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(seen["headers"], {"Authorization": "Bearer dev-token"})
         self.assertEqual(event["type"], "heartbeat")
 
+    def test_event_stream_can_reconnect_once(self) -> None:
+        calls: list[int] = []
+
+        class FailingWebSocket:
+            def __enter__(self) -> FailingWebSocket:
+                return self
+
+            def __exit__(
+                self,
+                exc_type: type[BaseException] | None,
+                exc_value: BaseException | None,
+                traceback: TracebackType | None,
+            ) -> None:
+                return None
+
+            def recv(self) -> str:
+                raise ConnectionError("closed")
+
+        class WorkingWebSocket:
+            def __enter__(self) -> WorkingWebSocket:
+                return self
+
+            def __exit__(
+                self,
+                exc_type: type[BaseException] | None,
+                exc_value: BaseException | None,
+                traceback: TracebackType | None,
+            ) -> None:
+                return None
+
+            def recv(self) -> str:
+                return json.dumps({"type": "heartbeat", "data": {}})
+
+        def connect_factory(*args: Any, **kwargs: Any) -> FailingWebSocket | WorkingWebSocket:
+            calls.append(1)
+            return FailingWebSocket() if len(calls) == 1 else WorkingWebSocket()
+
+        client = QmtClient("http://qmt.test", event_connect_factory=connect_factory)
+
+        event = next(iter(client.events(reconnects=1)))
+
+        self.assertEqual(event["type"], "heartbeat")
+        self.assertEqual(len(calls), 2)
+
     def test_orders_trades_and_recent_events_helpers(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             if request.url.path == "/v1/orders":
@@ -206,6 +256,78 @@ class ClientTests(unittest.TestCase):
         )
 
         self.assertEqual(client.health(), {"ok": True})
+
+    def test_server_unavailable_error_is_retryable_status(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(503, json={"detail": {"code": "SERVER_BUSY", "message": "busy"}})
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtServerUnavailableError) as raised:
+            client.health()
+
+        self.assertEqual(raised.exception.status_code, 503)
+        self.assertEqual(raised.exception.code, "SERVER_BUSY")
+
+    def test_request_retries_transient_status_once(self) -> None:
+        calls: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.path)
+            if len(calls) == 1:
+                return httpx.Response(503, json={"detail": {"code": "SERVER_BUSY"}})
+            return httpx.Response(200, json={"ok": True})
+
+        client = QmtClient("http://qmt.test", retries=1, transport=httpx.MockTransport(handler))
+
+        self.assertEqual(client.health(), {"ok": True})
+        self.assertEqual(len(calls), 2)
+
+    def test_diagnose_collects_failures_without_raising(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/v1/health":
+                return httpx.Response(200, json={"ok": True, "api_versions": ["v1"]})
+            if request.url.path == "/v1/qmt/status":
+                return httpx.Response(503, json={"detail": {"code": "NOT_READY"}})
+            if request.url.path == "/v1/rpc/methods":
+                return httpx.Response(200, json={"methods": {"xtdata": ["get_full_tick"]}})
+            if request.url.path == "/v1/rpc":
+                return httpx.Response(200, json={"ok": True, "data": {"000001.SZ": {"last": 1}}})
+            raise AssertionError(request.url.path)
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        result = client.diagnose(sample_code="000001.SZ")
+
+        self.assertEqual(result["schema_version"], "qmtclient.diagnose.v1")
+        self.assertFalse(result["ok"])
+        self.assertEqual(
+            [check["name"] for check in result["checks"]],
+            ["http", "ready", "methods", "sample"],
+        )
+        self.assertEqual(result["checks"][1]["error"]["code"], "NOT_READY")
+
+    def test_check_compatibility_reports_api_mismatch(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"ok": True, "api_versions": ["v2"]})
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        result = client.check_compatibility()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["checks"][0]["name"], "api_version")
+
+    def test_client_exposes_disabled_cache_by_default(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"ok": True})
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        client.cache.set("key", {"value": 1})
+
+        self.assertIsNone(client.cache.get("key"))
+        self.assertFalse(client.cache.info()["enabled"])
 
 
 if __name__ == "__main__":

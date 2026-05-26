@@ -29,6 +29,7 @@ print(client.xtdata.get_full_tick(["000001.SZ"]))
 
 ```python
 ticks = client.market.get_full_tick(["000001.SZ"])
+daily = client.market.daily_bars(["000001.SZ"], start_time="20260501")
 asset = client.account.asset("example-account")
 orders = client.account.cached_orders(limit=20)
 ```
@@ -47,8 +48,8 @@ for event in client.events(types=["stock_order", "stock_trade"]):
 ```python
 from qmtclient import FakeQmtClient
 
-fake = FakeQmtClient.from_fixture("examples/fixtures/offline_strategy.json")
-print(fake.market.get_full_tick(["000001.SZ"]))
+fake = FakeQmtClient.from_fixture("examples/fixtures/market_daily.json")
+print(fake.market.daily_bars(["000001.SZ"]))
 ```
 
 ## 边界
@@ -63,6 +64,7 @@ print(fake.market.get_full_tick(["000001.SZ"]))
 - [远程连接](docs/connection.md)
 - [策略接口](docs/strategy.md)
 - [离线测试](docs/offline-testing.md)
+- [数据工具](docs/data-tools.md)
 - [兼容性](docs/compatibility.md)
 - [发布检查](docs/release.md)
 - [路线图](docs/roadmap.md)

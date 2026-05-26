@@ -18,6 +18,7 @@ class FakeQmtClient:
         status: dict[str, Any] | None = None,
         methods: dict[str, Any] | None = None,
         rpc_results: dict[str, Any] | None = None,
+        market: dict[str, Any] | None = None,
         orders: list[dict[str, Any]] | None = None,
         trades: list[dict[str, Any]] | None = None,
         events: list[dict[str, Any]] | None = None,
@@ -25,6 +26,7 @@ class FakeQmtClient:
         self._health = health or {"ok": True, "api_versions": ["v1"]}
         self._status = status or {"ok": True}
         self._rpc_results = rpc_results or {}
+        self._market = market or {}
         self._methods = methods or {"methods": _methods_from_rpc_results(self._rpc_results)}
         self._orders = orders or []
         self._trades = trades or []
@@ -43,6 +45,7 @@ class FakeQmtClient:
             status=_dict_or_none(fixture.get("status")),
             methods=_dict_or_none(fixture.get("methods")),
             rpc_results=_dict_or_none(fixture.get("rpc")),
+            market=_dict_or_none(fixture.get("market")),
             orders=_dict_list_or_none(fixture.get("orders")),
             trades=_dict_list_or_none(fixture.get("trades")),
             events=_dict_list_or_none(fixture.get("events")),
@@ -77,6 +80,9 @@ class FakeQmtClient:
         kwargs: dict[str, Any] | None = None,
     ) -> Any:
         key = f"{target}.{method}"
+        market_result = self._market_rpc_result(target, method, kwargs or {})
+        if market_result is not None:
+            return deepcopy(market_result)
         if key not in self._rpc_results:
             raise QmtRpcError(
                 code="METHOD_NOT_ALLOWED",
@@ -93,6 +99,22 @@ class FakeQmtClient:
                 },
             )
         return deepcopy(self._rpc_results[key])
+
+    def _market_rpc_result(
+        self,
+        target: str,
+        method: str,
+        kwargs: dict[str, Any],
+    ) -> Any:
+        if target != "xtdata":
+            return None
+        if method == "get_market_data":
+            period = kwargs.get("period")
+            key = "daily_bars" if period == "1d" else "intraday_bars"
+            return self._market.get(key)
+        if method == "get_instruments":
+            return self._market.get("instruments")
+        return None
 
     def orders(self, limit: int | None = None) -> list[dict[str, Any]]:
         return _limited(self._orders, limit)

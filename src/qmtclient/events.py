@@ -32,21 +32,30 @@ class EventStream:
         timeout: float,
         api_version: str | None = "v1",
         types: list[str] | tuple[str, ...] | None = None,
+        reconnects: int = 0,
         connect_factory: ConnectFactory | None = None,
     ) -> None:
         self.url = build_ws_url(base_url, token, api_version=api_version, types=types)
         self.timeout = timeout
+        self.reconnects = reconnects
         self._headers = {"Authorization": f"Bearer {token}"} if token else {}
         self._connect_factory = connect_factory or _default_connect
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
-        with self._connect_factory(
-            self.url,
-            additional_headers=self._headers,
-            open_timeout=self.timeout,
-        ) as websocket:
-            while True:
-                yield json.loads(websocket.recv())
+        attempts = 0
+        while True:
+            try:
+                with self._connect_factory(
+                    self.url,
+                    additional_headers=self._headers,
+                    open_timeout=self.timeout,
+                ) as websocket:
+                    while True:
+                        yield json.loads(websocket.recv())
+            except Exception:
+                if attempts >= self.reconnects:
+                    raise
+                attempts += 1
 
 
 def build_ws_url(

@@ -102,6 +102,46 @@ class FakeClientTests(unittest.TestCase):
             ["heartbeat", "stock_trade"],
         )
 
+    def test_fake_client_loads_standard_market_fixture(self) -> None:
+        fixture = {
+            "market": {
+                "daily_bars": [
+                    {
+                        "code": "000001.SZ",
+                        "date": "2026-05-25",
+                        "open": 10,
+                        "high": 11,
+                        "low": 9,
+                        "close": 10.5,
+                        "volume": 1000,
+                        "amount": 10500,
+                    }
+                ],
+                "intraday_bars": [
+                    {
+                        "code": "000001.SZ",
+                        "datetime": "2026-05-25 09:31:00",
+                        "open": 10,
+                        "high": 10.1,
+                        "low": 9.9,
+                        "close": 10.05,
+                        "volume": 100,
+                        "amount": 1005,
+                    }
+                ],
+                "instruments": [{"code": "000001.SZ", "name": "Example Bank", "exchange": "SZ"}],
+            }
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "market.json"
+            path.write_text(json.dumps(fixture), encoding="utf-8")
+
+            client = FakeQmtClient.from_fixture(path)
+
+        self.assertEqual(client.market.daily_bars(["000001.SZ"])["data"][0]["code"], "000001.SZ")
+        self.assertEqual(client.market.instruments(["000001.SZ"])["data"][0]["exchange"], "SZ")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,10 @@ class QmtConnectionError(QmtClientError):
     """Raised when qmtserver cannot be reached."""
 
 
+class QmtRetryableError(QmtClientError):
+    """Marker for errors that may succeed on a later retry."""
+
+
 class QmtHttpError(QmtClientError):
     def __init__(
         self,
@@ -31,6 +35,10 @@ class QmtHttpError(QmtClientError):
 
 class QmtAuthError(QmtHttpError):
     """Raised when qmtserver rejects authentication."""
+
+
+class QmtServerUnavailableError(QmtHttpError, QmtRetryableError):
+    """Raised when qmtserver is temporarily unavailable."""
 
 
 class QmtProtocolError(QmtClientError):
@@ -67,3 +75,24 @@ class QmtRpcError(QmtClientError):
         self.method = method
         self.response = response
         self.request_id = request_id
+
+
+class QmtDataEmptyError(QmtClientError):
+    def __init__(self, message: str, *, schema_version: str | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.schema_version = schema_version
+
+
+class QmtSchemaMismatchError(QmtClientError):
+    def __init__(self, message: str, *, schema_version: str | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.schema_version = schema_version
+
+
+class QmtOptionalDependencyError(QmtClientError):
+    def __init__(self, dependency: str, feature: str) -> None:
+        super().__init__(f"{feature} requires optional dependency: {dependency}")
+        self.dependency = dependency
+        self.feature = feature

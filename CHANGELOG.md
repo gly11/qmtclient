@@ -1,5 +1,14 @@
 ﻿# 更新日志
 
+## Unreleased
+
+- 稳定 market facade：新增 `daily_bars`、`intraday_bars`、`instruments`。
+- 新增 typed response helpers、market/diagnose/snapshot schema version 和稳定错误类型。
+- 新增 `FakeQmtClient` 标准 market fixture 支持和 daily/intraday/empty/error 示例。
+- 新增 `diagnose()`、`check_compatibility()`、`client.batch` 和 snapshot manifest 校验工具。
+- 新增有限 retry/backoff、WebSocket reconnect、`MemoryCache`、Pandas/Arrow 显式转换 helper。
+- 更新 roadmap、兼容性、连接、策略、离线测试和数据工具文档。
+
 ## 0.1.0
 
 - 独立 `qmtclient` 包，兼容 qmtserver `/v1`。

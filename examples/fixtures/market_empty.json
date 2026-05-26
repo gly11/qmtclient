@@ -1,0 +1,15 @@
+{
+  "health": {
+    "ok": true,
+    "api_versions": ["v1"]
+  },
+  "status": {
+    "ok": true,
+    "ready": true
+  },
+  "market": {
+    "daily_bars": [],
+    "intraday_bars": [],
+    "instruments": []
+  }
+}

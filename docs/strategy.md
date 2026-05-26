@@ -1,14 +1,40 @@
 ﻿# 策略接口
 
-`client.market`、`client.account`、`client.trading` 是 qmtserver RPC/API 的薄封装，减少手写 RPC payload。
+`client.market`、`client.account`、`client.trading` 是 qmtserver RPC/API 的客户端封装，减少手写 RPC payload。只读行情优先使用稳定 `market` facade；直接 RPC 仍保留为 escape hatch。
 
 ## market
 
 ```python
 ticks = client.market.get_full_tick(["000001.SZ", "600000.SH"])
+daily = client.market.daily_bars(["000001.SZ"], start_time="20260501")
+bars_1m = client.market.intraday_bars(["000001.SZ"], period="1m")
+instruments = client.market.instruments(["000001.SZ"])
 ```
 
-其他已开放 `xtdata` 方法：
+`daily_bars`、`intraday_bars` 和 `instruments` 返回 JSON-friendly typed response：
+
+```python
+{
+    "schema_version": "qmtclient.market.v1",
+    "data": [
+        {
+            "code": "000001.SZ",
+            "date": "2026-05-25",
+            "open": 10.0,
+            "high": 10.8,
+            "low": 9.8,
+            "close": 10.5,
+            "volume": 1000000.0,
+            "amount": 10500000.0,
+        }
+    ],
+    "meta": {"kind": "daily_bars", "codes": ["000001.SZ"], "period": "1d"},
+}
+```
+
+空数据会抛出 `QmtDataEmptyError`，字段缺失或类型不匹配会抛出 `QmtSchemaMismatchError`。
+
+其他 `xtdata` 方法可继续通过 RPC 调用：
 
 ```python
 data = client.market.rpc("get_market_data", args=[...], kwargs={...})

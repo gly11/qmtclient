@@ -1,0 +1,30 @@
+{
+  "health": {
+    "ok": true,
+    "api_versions": ["v1"]
+  },
+  "status": {
+    "ok": false,
+    "ready": false
+  },
+  "rpc": {
+    "xtdata.get_full_tick": {
+      "000001.SZ": {
+        "last": 10.5
+      }
+    }
+  },
+  "market": {
+    "daily_bars": [
+      {
+        "date": "2026-05-25",
+        "open": 10.0,
+        "high": 10.8,
+        "low": 9.8,
+        "close": 10.5,
+        "volume": 1000000,
+        "amount": 10500000.0
+      }
+    ]
+  }
+}

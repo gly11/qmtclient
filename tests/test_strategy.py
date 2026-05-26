@@ -5,7 +5,13 @@ import unittest
 
 import httpx
 
-from qmtclient import QmtClient, QmtRpcError, stock_account
+from qmtclient import (
+    QmtClient,
+    QmtDataEmptyError,
+    QmtRpcError,
+    QmtSchemaMismatchError,
+    stock_account,
+)
 
 
 class StrategyFacadeTests(unittest.TestCase):
@@ -29,6 +35,58 @@ class StrategyFacadeTests(unittest.TestCase):
             client.market.get_full_tick(("000001.SZ", "600000.SH")),
             {"000001.SZ": {"last": 1}},
         )
+
+    def test_market_daily_bars_returns_typed_response(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            payload = json.loads(request.content)
+            self.assertEqual(payload["target"], "xtdata")
+            self.assertEqual(payload["method"], "get_market_data")
+            self.assertEqual(payload["kwargs"]["period"], "1d")
+            return httpx.Response(
+                200,
+                json={
+                    "ok": True,
+                    "data": [
+                        {
+                            "code": "000001.SZ",
+                            "date": "2026-05-25",
+                            "open": 10,
+                            "high": 11,
+                            "low": 9,
+                            "close": 10.5,
+                            "volume": 1000,
+                            "amount": 10500,
+                        }
+                    ],
+                },
+            )
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        response = client.market.daily_bars(["000001.SZ"], start_time="20260501")
+
+        self.assertEqual(response["schema_version"], "qmtclient.market.v1")
+        self.assertEqual(response["meta"]["kind"], "daily_bars")
+        self.assertEqual(response["data"][0]["code"], "000001.SZ")
+        self.assertIsInstance(response["data"][0]["close"], float)
+
+    def test_market_intraday_bars_rejects_empty_data(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"ok": True, "data": []})
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtDataEmptyError):
+            client.market.intraday_bars(["000001.SZ"], period="1m")
+
+    def test_market_instruments_rejects_schema_mismatch(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"ok": True, "data": [{"name": "missing-code"}]})
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtSchemaMismatchError):
+            client.market.instruments(["000001.SZ"])
 
     def test_account_facade_uses_stock_account_payload(self) -> None:
         seen_methods: list[str] = []

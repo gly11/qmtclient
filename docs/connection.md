@@ -9,6 +9,19 @@ client = QmtClient("http://192.168.1.10:8000", token="dev-token")
 print(client.health())
 ```
 
+## 诊断
+
+`diagnose()` 会聚合 HTTP、server ready、RPC methods 和可选只读 sample 检查。单项失败不会中断整体诊断。
+
+```python
+result = client.diagnose(sample_code="000001.SZ")
+print(result["ok"])
+for check in result["checks"]:
+    print(check["name"], check["ok"])
+```
+
+返回结构使用 `schema_version="qmtclient.diagnose.v1"`。真实 qmtserver 诊断只作为手动 smoke，不是默认单元测试门禁。
+
 ## 地址示例
 
 | 场景 | `base_url` |
@@ -31,6 +44,8 @@ import os
 client = QmtClient(
     os.environ["QMTCLIENT_BASE_URL"],
     token=os.environ.get("QMTCLIENT_TOKEN"),
+    timeout=10.0,
+    retries=1,
 )
 ```
 

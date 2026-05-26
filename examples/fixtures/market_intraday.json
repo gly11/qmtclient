@@ -1,0 +1,24 @@
+{
+  "health": {
+    "ok": true,
+    "api_versions": ["v1"]
+  },
+  "status": {
+    "ok": true,
+    "ready": true
+  },
+  "market": {
+    "intraday_bars": [
+      {
+        "code": "000001.SZ",
+        "datetime": "2026-05-25 09:31:00",
+        "open": 10.0,
+        "high": 10.1,
+        "low": 9.9,
+        "close": 10.05,
+        "volume": 10000,
+        "amount": 100500.0
+      }
+    ]
+  }
+}

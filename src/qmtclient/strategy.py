@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, Protocol
 
+from qmtclient.models import MarketResponse, normalize_bars, normalize_instruments
+
 
 class StrategyClient(Protocol):
     def rpc(
@@ -34,6 +36,44 @@ class MarketFacade:
         data = self._client.rpc("xtdata", "get_full_tick", [list(codes)])
         return data if isinstance(data, dict) else {}
 
+    def daily_bars(
+        self,
+        codes: Sequence[str],
+        *,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        count: int | None = None,
+        dividend_type: str | None = None,
+    ) -> MarketResponse:
+        period = "1d"
+        data = self._client.rpc(
+            "xtdata",
+            "get_market_data",
+            kwargs=_market_kwargs(codes, period, start_time, end_time, count, dividend_type),
+        )
+        return normalize_bars(data, kind="daily_bars", codes=codes, period=period)
+
+    def intraday_bars(
+        self,
+        codes: Sequence[str],
+        *,
+        period: str = "1m",
+        start_time: str | None = None,
+        end_time: str | None = None,
+        count: int | None = None,
+        dividend_type: str | None = None,
+    ) -> MarketResponse:
+        data = self._client.rpc(
+            "xtdata",
+            "get_market_data",
+            kwargs=_market_kwargs(codes, period, start_time, end_time, count, dividend_type),
+        )
+        return normalize_bars(data, kind="intraday_bars", codes=codes, period=period)
+
+    def instruments(self, codes: Sequence[str]) -> MarketResponse:
+        data = self._client.rpc("xtdata", "get_instruments", [list(codes)])
+        return normalize_instruments(data, codes=codes)
+
     def rpc(
         self,
         method: str,
@@ -41,6 +81,26 @@ class MarketFacade:
         kwargs: dict[str, Any] | None = None,
     ) -> Any:
         return self._client.rpc("xtdata", method, args, kwargs)
+
+
+def _market_kwargs(
+    codes: Sequence[str],
+    period: str,
+    start_time: str | None,
+    end_time: str | None,
+    count: int | None,
+    dividend_type: str | None,
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {"codes": list(codes), "period": period}
+    if start_time is not None:
+        kwargs["start_time"] = start_time
+    if end_time is not None:
+        kwargs["end_time"] = end_time
+    if count is not None:
+        kwargs["count"] = count
+    if dividend_type is not None:
+        kwargs["dividend_type"] = dividend_type
+    return kwargs
 
 
 class AccountFacade:

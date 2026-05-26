@@ -23,9 +23,37 @@ SDK 入口：
 - `QmtClient`
 - `client.xtdata` / `client.trader`
 - `client.market` / `client.account` / `client.trading`
+- `client.batch`
 - `FakeQmtClient`
 - `load_json` / `load_jsonl` / `load_fixture`
+- `load_snapshot_manifest`
 - `EventReplay`
+
+## 数据契约
+
+稳定 market facade 使用 `schema_version="qmtclient.market.v1"`。基础 response 为 JSON-friendly 结构：
+
+- `schema_version`: 当前客户端 schema 名称。
+- `data`: 规范化后的 list。
+- `meta`: `kind`、`codes`、`period` 等客户端上下文。
+
+`daily_bars` 字段：`code`、`date`、`open`、`high`、`low`、`close`、`volume`、`amount`。
+
+`intraday_bars` 字段：`code`、`datetime`、`open`、`high`、`low`、`close`、`volume`、`amount`。
+
+`instruments` 字段：`code`、`name`、`exchange`、`instrument_type`、`status`。
+
+诊断结果使用 `schema_version="qmtclient.diagnose.v1"`。snapshot manifest 使用 `schema_version="qmtclient.snapshot.v1"`。
+
+## 错误分类
+
+- `QmtAuthError`: token 或认证失败。
+- `QmtServerUnavailableError`: qmtserver 临时不可用，例如 502、503、504。
+- `QmtDataEmptyError`: 服务端成功响应但稳定数据为空。
+- `QmtSchemaMismatchError`: 返回字段、manifest 或 schema 与客户端契约不匹配。
+- `QmtOptionalDependencyError`: 显式转换工具缺少可选依赖。
+
+默认测试必须使用 mock、fake 或 fixture；真实 qmtserver smoke 是可选手动验证。
 
 ## 边界
 
