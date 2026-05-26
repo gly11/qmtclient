@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from qmtclient import __version__
-from qmtclient.client import API_VERSION
+from qmtclient.client import API_VERSION, QmtClient
 from qmtclient.errors import (
     QmtAuthError,
     QmtClientError,
@@ -24,9 +26,10 @@ EXIT_CONNECTION_ERROR = 4
 EXIT_SCHEMA_ERROR = 5
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, client_factory: Callable[..., Any] = QmtClient) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    args.client_factory = client_factory
     try:
         result = args.func(args)
     except Exception as exc:
@@ -37,11 +40,23 @@ def main(argv: list[str] | None = None) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="qmtclient")
+    parser.add_argument("--base-url", default="http://127.0.0.1:8000")
+    parser.add_argument("--token")
+    parser.add_argument("--token-env", default="QMTCLIENT_TOKEN")
+    parser.add_argument("--timeout", type=float, default=10.0)
+    parser.add_argument("--api-version", default=API_VERSION)
     parser.add_argument("--json", action="store_true", help="output JSON")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     version = subparsers.add_parser("version", help="show qmtclient version")
     version.set_defaults(func=_cmd_version)
+
+    check = subparsers.add_parser("check", help="check qmtserver health and compatibility")
+    check.set_defaults(func=_cmd_check)
+
+    diagnose = subparsers.add_parser("diagnose", help="run qmtclient diagnostics")
+    diagnose.add_argument("--sample-code")
+    diagnose.set_defaults(func=_cmd_diagnose)
 
     snapshot = subparsers.add_parser("snapshot-verify", help="verify snapshot manifest")
     snapshot.add_argument("manifest")
@@ -59,6 +74,28 @@ def _cmd_version(args: argparse.Namespace) -> dict[str, Any]:
         "qmtclient": __version__,
         "api_version": API_VERSION,
     }
+
+
+def _cmd_check(args: argparse.Namespace) -> dict[str, Any]:
+    client = _create_client(args)
+    try:
+        health = client.health()
+        compatibility = client.check_compatibility()
+    finally:
+        _close_client(client)
+    return {
+        "ok": bool(health.get("ok", False)) and bool(compatibility.get("ok", False)),
+        "health": health,
+        "compatibility": compatibility,
+    }
+
+
+def _cmd_diagnose(args: argparse.Namespace) -> dict[str, Any]:
+    client = _create_client(args)
+    try:
+        return client.diagnose(sample_code=args.sample_code)
+    finally:
+        _close_client(client)
 
 
 def _cmd_snapshot_verify(args: argparse.Namespace) -> dict[str, Any]:
@@ -91,6 +128,30 @@ def _cmd_fixture_check(args: argparse.Namespace) -> dict[str, Any]:
         "trades": _list_count(fixture.get("trades")),
         "market_keys": _sorted_keys(fixture.get("market")),
     }
+
+
+def _create_client(args: argparse.Namespace) -> Any:
+    return args.client_factory(
+        args.base_url,
+        token=_resolve_token(args),
+        timeout=args.timeout,
+        api_version=args.api_version,
+    )
+
+
+def _resolve_token(args: argparse.Namespace) -> str | None:
+    if args.token is not None:
+        return args.token
+    token_env = args.token_env
+    if token_env:
+        return os.environ.get(token_env)
+    return None
+
+
+def _close_client(client: Any) -> None:
+    close = getattr(client, "close", None)
+    if callable(close):
+        close()
 
 
 def _manifest_file_count(manifest: dict[str, Any]) -> int:

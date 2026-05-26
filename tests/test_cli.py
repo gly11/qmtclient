@@ -4,13 +4,17 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
+from unittest import mock
 
 from qmtclient import __version__
 from qmtclient.cli import main
 from qmtclient.client import API_VERSION
+from qmtclient.errors import QmtAuthError
 
 
 class CliTests(unittest.TestCase):
@@ -128,12 +132,116 @@ class CliTests(unittest.TestCase):
         self.assertEqual(summary["fixture_type"], "jsonl")
         self.assertEqual(summary["events"], 2)
 
+    def test_check_uses_connection_arguments_and_token_env(self) -> None:
+        captured: dict[str, Any] = {}
 
-def _run_cli(argv: list[str]) -> tuple[int, str, str]:
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                captured["args"] = args
+                captured["kwargs"] = kwargs
+
+            def health(self) -> dict[str, object]:
+                return {"ok": True, "api_versions": ["v1"]}
+
+            def check_compatibility(self) -> dict[str, object]:
+                return {"ok": True, "checks": []}
+
+        with mock.patch.dict(os.environ, {"QMTCLIENT_TEST_TOKEN": "env-token"}):
+            code, stdout, stderr = _run_cli(
+                [
+                    "--json",
+                    "--base-url",
+                    "http://qmt.test",
+                    "--token-env",
+                    "QMTCLIENT_TEST_TOKEN",
+                    "--timeout",
+                    "2.5",
+                    "--api-version",
+                    "v1",
+                    "check",
+                ],
+                client_factory=FakeClient,
+            )
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(summary["ok"])
+        self.assertEqual(captured["args"], ("http://qmt.test",))
+        self.assertEqual(
+            captured["kwargs"],
+            {"token": "env-token", "timeout": 2.5, "api_version": "v1"},
+        )
+
+    def test_token_argument_overrides_environment_token(self) -> None:
+        captured: dict[str, Any] = {}
+
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                captured["kwargs"] = kwargs
+
+            def health(self) -> dict[str, object]:
+                return {"ok": True, "api_versions": ["v1"]}
+
+            def check_compatibility(self) -> dict[str, object]:
+                return {"ok": True, "checks": []}
+
+        with mock.patch.dict(os.environ, {"QMTCLIENT_TOKEN": "env-token"}):
+            code, stdout, stderr = _run_cli(
+                ["--json", "--token", "arg-token", "check"],
+                client_factory=FakeClient,
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(json.loads(stdout)["ok"])
+        self.assertEqual(captured["kwargs"]["token"], "arg-token")
+
+    def test_diagnose_passes_sample_code(self) -> None:
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                pass
+
+            def diagnose(self, *, sample_code: str | None = None) -> dict[str, object]:
+                return {
+                    "schema_version": "qmtclient.diagnose.v1",
+                    "ok": True,
+                    "checks": [],
+                    "meta": {"sample_code": sample_code},
+                }
+
+        code, stdout, stderr = _run_cli(
+            ["--json", "diagnose", "--sample-code", "000001.SZ"],
+            client_factory=FakeClient,
+        )
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertEqual(summary["meta"]["sample_code"], "000001.SZ")
+
+    def test_auth_error_maps_to_exit_code(self) -> None:
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                pass
+
+            def health(self) -> dict[str, object]:
+                raise QmtAuthError(401, "bad token", {}, code="UNAUTHORIZED")
+
+        code, stdout, stderr = _run_cli(["--json", "check"], client_factory=FakeClient)
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 3)
+        self.assertEqual(stderr, "")
+        self.assertFalse(summary["ok"])
+        self.assertEqual(summary["error"]["type"], "QmtAuthError")
+
+
+def _run_cli(argv: list[str], **kwargs: Any) -> tuple[int, str, str]:
     stdout = io.StringIO()
     stderr = io.StringIO()
     with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-        code = main(argv)
+        code = main(argv, **kwargs)
     return code, stdout.getvalue(), stderr.getvalue()
 
 
