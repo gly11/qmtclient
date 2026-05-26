@@ -1,6 +1,6 @@
 ﻿# 更新日志
 
-## Unreleased
+## 0.2.0
 
 - 稳定 market facade：新增 `daily_bars`、`intraday_bars`、`instruments`。
 - 新增 typed response helpers、market/diagnose/snapshot schema version 和稳定错误类型。

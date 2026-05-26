@@ -1,6 +1,6 @@
 ﻿# 发布检查
 
-`0.1.0` 发布前运行：
+发布前运行：
 
 ```powershell
 uv sync
@@ -8,6 +8,7 @@ uv run python -m unittest discover -s tests
 uv run ruff check .
 uv run ruff format --check .
 uv run ty check
+git diff --check
 uv build
 uv tool run twine check dist/*
 ```
@@ -23,9 +24,10 @@ GitHub Actions 覆盖：
 ## 包检查
 
 - `pyproject.toml` 版本与 `qmtclient.__version__` 一致。
+- `CHANGELOG.md` 已将待发布内容从 `Unreleased` 固化到目标版本。
 - wheel 包含 `qmtclient/py.typed`。
 - wheel 不包含 `.venv/`、缓存、真实 token、真实账号、个人路径、MiniQMT 数据或日志。
-- `uv.lock` 与 `pyproject.toml` 版本一致。
+- 若本机 `uv` 配置导致 `uv.lock` 出现镜像源噪音，提交前先恢复。
 
 ## 不发布
 
