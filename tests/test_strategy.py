@@ -14,6 +14,18 @@ from qmtclient import (
 )
 
 
+def _trader_response(data: dict[str, object]) -> httpx.Response:
+    return httpx.Response(
+        200,
+        json={
+            "ok": True,
+            "data": data,
+            "error": None,
+            "meta": {"schema": "trader.readonly.v1"},
+        },
+    )
+
+
 class StrategyFacadeTests(unittest.TestCase):
     def test_stock_account_is_json_friendly(self) -> None:
         self.assertEqual(
@@ -105,37 +117,116 @@ class StrategyFacadeTests(unittest.TestCase):
         with self.assertRaises(QmtSchemaMismatchError):
             client.market.instruments(["000001.SZ"])
 
-    def test_account_facade_uses_stock_account_payload(self) -> None:
-        seen_methods: list[str] = []
+    def test_trader_readonly_helpers_call_stable_endpoints(self) -> None:
+        seen_paths: list[str] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
-            payload = json.loads(request.content)
-            seen_methods.append(payload["method"])
-            if payload["method"] == "query_account_infos":
+            seen_paths.append(request.url.path)
+            if request.url.path == "/v1/trader/account-status":
+                return _trader_response({"statuses": [{"account_id": "10001"}]})
+            if request.url.path == "/v1/trader/asset":
+                self.assertEqual(request.url.params["account_id"], "10001")
+                self.assertEqual(request.url.params["account_type"], "CREDIT")
+                return _trader_response({"asset": {"account_id": "10001"}})
+            if request.url.path == "/v1/trader/positions":
+                return _trader_response({"positions": [{"stock_code": "000001.SZ"}]})
+            if request.url.path == "/v1/trader/orders":
+                self.assertEqual(request.url.params["cancelable_only"], "true")
+                return _trader_response({"orders": [{"order_id": "O10001"}]})
+            if request.url.path == "/v1/trader/trades":
+                return _trader_response({"trades": [{"trade_id": "T10001"}]})
+            raise AssertionError(request.url.path)
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        self.assertEqual(client.trader_account_status(), [{"account_id": "10001"}])
+        self.assertEqual(
+            client.trader_asset("10001", account_type="CREDIT"), {"account_id": "10001"}
+        )
+        self.assertEqual(client.trader_positions("10001"), [{"stock_code": "000001.SZ"}])
+        self.assertEqual(
+            client.trader_orders("10001", cancelable_only=True), [{"order_id": "O10001"}]
+        )
+        self.assertEqual(client.trader_trades("10001"), [{"trade_id": "T10001"}])
+        self.assertEqual(
+            seen_paths,
+            [
+                "/v1/trader/account-status",
+                "/v1/trader/asset",
+                "/v1/trader/positions",
+                "/v1/trader/orders",
+                "/v1/trader/trades",
+            ],
+        )
+
+    def test_trader_readonly_helpers_raise_rpc_error_for_api_error_envelope(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "ok": False,
+                    "data": None,
+                    "error": {"code": "TRADER_ACCOUNT_REQUIRED", "message": "account required"},
+                    "meta": {"request_id": "readonly-request"},
+                },
+            )
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtRpcError) as raised:
+            client.trader_asset()
+
+        self.assertEqual(raised.exception.code, "TRADER_ACCOUNT_REQUIRED")
+        self.assertEqual(raised.exception.message, "account required")
+        self.assertEqual(raised.exception.target, "trader")
+        self.assertEqual(raised.exception.method, "asset")
+        self.assertEqual(raised.exception.request_id, "readonly-request")
+
+    def test_account_facade_uses_stable_trader_readonly_endpoints(self) -> None:
+        seen_paths: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen_paths.append(request.url.path)
+            if request.url.path == "/v1/rpc":
+                payload = json.loads(request.content)
+                self.assertEqual(payload["target"], "trader")
+                self.assertEqual(payload["method"], "query_account_infos")
                 self.assertEqual(payload["args"], [])
                 return httpx.Response(200, json={"ok": True, "data": [{"account_id": "10001"}]})
-            self.assertEqual(payload["target"], "trader")
-            self.assertEqual(
-                payload["args"],
-                [{"__type__": "StockAccount", "account_id": "10001", "account_type": "STOCK"}],
-            )
-            return httpx.Response(200, json={"ok": True, "data": {"method": payload["method"]}})
+            if request.url.path == "/v1/trader/account-status":
+                return _trader_response({"statuses": [{"account_id": "10001"}]})
+            if request.url.path == "/v1/trader/asset":
+                self.assertEqual(request.url.params["account_id"], "10001")
+                self.assertEqual(request.url.params["account_type"], "STOCK")
+                return _trader_response({"asset": {"account_id": "10001"}})
+            if request.url.path == "/v1/trader/positions":
+                return _trader_response({"positions": [{"stock_code": "000001.SZ"}]})
+            if request.url.path == "/v1/trader/orders":
+                self.assertEqual(request.url.params["cancelable_only"], "true")
+                return _trader_response({"orders": [{"order_id": "O10001"}]})
+            if request.url.path == "/v1/trader/trades":
+                return _trader_response({"trades": [{"trade_id": "T10001"}]})
+            raise AssertionError(request.url.path)
 
         client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
 
         self.assertEqual(client.account.infos(), [{"account_id": "10001"}])
-        self.assertEqual(client.account.asset("10001"), {"method": "query_stock_asset"})
-        self.assertEqual(client.account.positions("10001"), {"method": "query_stock_positions"})
-        self.assertEqual(client.account.orders("10001"), {"method": "query_stock_orders"})
-        self.assertEqual(client.account.trades("10001"), {"method": "query_stock_trades"})
+        self.assertEqual(client.account.status(), [{"account_id": "10001"}])
+        self.assertEqual(client.account.asset("10001"), {"account_id": "10001"})
+        self.assertEqual(client.account.positions("10001"), [{"stock_code": "000001.SZ"}])
         self.assertEqual(
-            seen_methods,
+            client.account.orders("10001", cancelable_only=True), [{"order_id": "O10001"}]
+        )
+        self.assertEqual(client.account.trades("10001"), [{"trade_id": "T10001"}])
+        self.assertEqual(
+            seen_paths,
             [
-                "query_account_infos",
-                "query_stock_asset",
-                "query_stock_positions",
-                "query_stock_orders",
-                "query_stock_trades",
+                "/v1/rpc",
+                "/v1/trader/account-status",
+                "/v1/trader/asset",
+                "/v1/trader/positions",
+                "/v1/trader/orders",
+                "/v1/trader/trades",
             ],
         )
 

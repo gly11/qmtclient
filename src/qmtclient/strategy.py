@@ -21,6 +21,37 @@ class StrategyClient(Protocol):
 
     def trades(self, limit: int | None = None) -> list[dict[str, Any]]: ...
 
+    def trader_account_status(self) -> list[dict[str, Any]]: ...
+
+    def trader_asset(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> dict[str, Any]: ...
+
+    def trader_positions(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> list[dict[str, Any]]: ...
+
+    def trader_orders(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+        cancelable_only: bool = False,
+    ) -> list[dict[str, Any]]: ...
+
+    def trader_trades(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> list[dict[str, Any]]: ...
+
 
 def stock_account(account_id: str, account_type: str = "STOCK") -> dict[str, str]:
     return {
@@ -190,36 +221,42 @@ class AccountFacade:
     def infos(self) -> Any:
         return self._client.rpc("trader", "query_account_infos")
 
-    def status(self) -> Any:
-        return self._client.rpc("trader", "query_account_status")
+    def status(self) -> list[dict[str, Any]]:
+        return self._client.trader_account_status()
 
-    def asset(self, account_id: str, account_type: str = "STOCK") -> Any:
-        return self._client.rpc(
-            "trader",
-            "query_stock_asset",
-            [stock_account(account_id, account_type)],
+    def asset(
+        self,
+        account_id: str | None = None,
+        account_type: str | None = "STOCK",
+    ) -> dict[str, Any]:
+        return self._client.trader_asset(account_id, account_type=account_type)
+
+    def positions(
+        self,
+        account_id: str | None = None,
+        account_type: str | None = "STOCK",
+    ) -> list[dict[str, Any]]:
+        return self._client.trader_positions(account_id, account_type=account_type)
+
+    def orders(
+        self,
+        account_id: str | None = None,
+        account_type: str | None = "STOCK",
+        *,
+        cancelable_only: bool = False,
+    ) -> list[dict[str, Any]]:
+        return self._client.trader_orders(
+            account_id,
+            account_type=account_type,
+            cancelable_only=cancelable_only,
         )
 
-    def positions(self, account_id: str, account_type: str = "STOCK") -> Any:
-        return self._client.rpc(
-            "trader",
-            "query_stock_positions",
-            [stock_account(account_id, account_type)],
-        )
-
-    def orders(self, account_id: str, account_type: str = "STOCK") -> Any:
-        return self._client.rpc(
-            "trader",
-            "query_stock_orders",
-            [stock_account(account_id, account_type)],
-        )
-
-    def trades(self, account_id: str, account_type: str = "STOCK") -> Any:
-        return self._client.rpc(
-            "trader",
-            "query_stock_trades",
-            [stock_account(account_id, account_type)],
-        )
+    def trades(
+        self,
+        account_id: str | None = None,
+        account_type: str | None = "STOCK",
+    ) -> list[dict[str, Any]]:
+        return self._client.trader_trades(account_id, account_type=account_type)
 
     def cached_orders(self, limit: int | None = None) -> list[dict[str, Any]]:
         return self._client.orders(limit=limit)

@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 
+import qmtclient.trader as trader_api
 from qmtclient.batch import BatchClient
 from qmtclient.cache import MemoryCache
 from qmtclient.errors import (
@@ -127,6 +128,47 @@ class QmtClient:
         params = {"limit": limit} if limit is not None else None
         response = self._request("GET", "/trades", params=params)
         return _response_list(response)
+
+    def trader_account_status(self) -> list[dict[str, Any]]:
+        return trader_api.trader_account_status(self)
+
+    def trader_asset(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> dict[str, Any]:
+        return trader_api.trader_asset(self, account_id, account_type=account_type)
+
+    def trader_positions(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return trader_api.trader_positions(self, account_id, account_type=account_type)
+
+    def trader_orders(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+        cancelable_only: bool = False,
+    ) -> list[dict[str, Any]]:
+        return trader_api.trader_orders(
+            self,
+            account_id,
+            account_type=account_type,
+            cancelable_only=cancelable_only,
+        )
+
+    def trader_trades(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        return trader_api.trader_trades(self, account_id, account_type=account_type)
 
     def recent_events(
         self,

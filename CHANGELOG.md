@@ -4,7 +4,7 @@
 
 - 新增诊断优先 CLI：`check`、`diagnose`、`methods`、`ws-check`、
   `market-capabilities`、`snapshot-verify`、`fixture-check`。
-- 规划适配 qmtserver `0.4.0` 稳定 `/v1/trader/*` 只读交易查询 endpoint。
+- 适配 qmtserver `0.4.0` 稳定 `/v1/trader/*` 只读交易查询 endpoint。
 - 更新 CLI、兼容性和 README 文档。
 
 ## 0.3.0

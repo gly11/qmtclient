@@ -1,6 +1,6 @@
-# qmtserver 0.4 只读交易查询适配计划
+# qmtserver 0.4 只读交易查询适配
 
-qmtserver `0.4.0` prerelease 新增稳定只读交易查询 endpoint。qmtclient 应在发布 `0.4.0` 前适配这些 endpoint，让 `client.account` 优先走稳定 API，而不是继续依赖 RPC escape hatch。
+qmtserver `0.4.0` prerelease 新增稳定只读交易查询 endpoint。qmtclient `0.4.0` 已适配这些 endpoint，让 `client.account` 优先走稳定 API，而不是继续依赖 RPC escape hatch。
 
 ## 服务端契约
 
@@ -41,10 +41,10 @@ cancelable_only=true
 
 失败时 HTTP 仍可能是 200，但 `ok=False`，`error.code` 包含 `TRADER_ACCOUNT_REQUIRED`、`TARGET_NOT_CONNECTED` 或 `ACCOUNT_NOT_ALLOWED` 等服务端错误。
 
-## qmtclient 目标
+## qmtclient 行为
 
-- `QmtClient` 增加稳定只读交易查询方法。
-- `client.account` 优先调用 `/v1/trader/*` endpoint。
+- `QmtClient` 提供稳定只读交易查询方法。
+- `client.account` 优先调用 `/v1/trader/*` endpoints。
 - 保留 `client.account.rpc()`、`client.trader.*` 和 `client.rpc()` 作为 escape hatch。
 - 交易命令仍只在 `client.trading`，不新增真实交易快捷路径。
 - 错误继续映射为 `QmtRpcError`，便于复用现有错误处理。
@@ -61,20 +61,21 @@ client.trader_orders(account_id=None, account_type=None, cancelable_only=False)
 client.trader_trades(account_id=None, account_type=None)
 ```
 
-`client.account` 调整为：
+`client.account`：
 
 ```python
 client.account.status()
-client.account.asset(account_id=None, account_type=None)
-client.account.positions(account_id=None, account_type=None)
-client.account.orders(account_id=None, account_type=None, cancelable_only=False)
-client.account.trades(account_id=None, account_type=None)
+client.account.asset(account_id=None, account_type="STOCK")
+client.account.positions(account_id=None, account_type="STOCK")
+client.account.orders(account_id=None, account_type="STOCK", cancelable_only=False)
+client.account.trades(account_id=None, account_type="STOCK")
 ```
 
 兼容性说明：
 
-- `account_id` 从必填改为可选，用于支持 qmtserver 从 `QMT_ACCOUNT_ID` 解析默认账号。
+- `account_id` 可选，用于支持 qmtserver 从服务端配置解析默认账号。
 - 仍允许显式传 `account_id`，适合多账号或不想依赖服务端默认账号的场景。
+- `client.account` 的 `account_type` 默认保持 `"STOCK"`；如需完全使用服务端默认值，可显式传 `None`。
 - `client.account.infos()` 暂保留 RPC，因为 qmtserver 0.4 只提供 `account-status` 稳定 endpoint。
 
 ## 数据返回
@@ -89,9 +90,9 @@ client.account.trades(account_id=None, account_type=None)
 
 字段由 qmtserver `trader.readonly.v1` 负责规范化。qmtclient 不自行补字段、不连接 MiniQMT、不导入 `xtquant`。
 
-## 测试计划
+## 测试覆盖
 
-新增或更新 `tests/test_strategy.py`：
+`tests/test_strategy.py` 覆盖：
 
 - `client.trader_asset()` 调用 `/v1/trader/asset`，传递 `account_id` 和 `account_type`。
 - `client.trader_positions()`、`trader_orders(cancelable_only=True)`、`trader_trades()` 解析 named list。
@@ -102,21 +103,7 @@ client.account.trades(account_id=None, account_type=None)
 
 默认测试继续使用 `httpx.MockTransport`，不连接真实 qmtserver。
 
-## 文档计划
-
-- `docs/compatibility.md` 增加 `/v1/trader/*` 支持范围。
-- `docs/strategy.md` 说明 account facade 优先走 qmtserver `0.4.0` 稳定只读交易查询 endpoint。
-- `CHANGELOG.md` 在 `0.4.0` 中加入 qmtserver `0.4.0` trader readonly 适配。
-- `README.md` 可保留现有 account 示例，只补一句“account 查询优先走稳定只读 endpoint”。
-
-## 实施步骤
-
-1. 先写失败测试，覆盖 `QmtClient.trader_*` helper 和 `client.account` facade。
-2. 在 `client.py` 增加 named item/list 解析 helper 和 `trader_*` 方法。
-3. 调整 `strategy.py` 的 `AccountFacade`，让只读查询调用稳定 endpoint。
-4. 更新 fake client 或 fixture 文档，仅在现有 fake 行为不匹配测试时调整。
-5. 更新文档和 changelog。
-6. 运行完整质量门：
+## 验证
 
 ```powershell
 uv run python -m unittest discover -s tests
@@ -128,4 +115,4 @@ git diff --check
 
 ## 发布建议
 
-建议在 qmtclient `0.4.0` tag 前完成本适配。这样 qmtclient `0.4.0` 与 qmtserver `0.4.0` 的稳定只读交易查询契约保持一致。
+建议在 qmtclient `0.4.0` tag 前保留本适配。这样 qmtclient `0.4.0` 与 qmtserver `0.4.0` 的稳定只读交易查询契约保持一致。

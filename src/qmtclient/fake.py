@@ -7,7 +7,7 @@ from typing import Any
 from qmtclient.errors import QmtRpcError
 from qmtclient.fixtures import EventReplay, load_fixture
 from qmtclient.proxy import RpcTargetProxy
-from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade
+from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade, stock_account
 
 
 class FakeQmtClient:
@@ -178,6 +178,63 @@ class FakeQmtClient:
     def trades(self, limit: int | None = None) -> list[dict[str, Any]]:
         return _limited(self._trades, limit)
 
+    def trader_account_status(self) -> list[dict[str, Any]]:
+        data = self.rpc("trader", "query_account_status")
+        return _dict_list(data)
+
+    def trader_asset(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> dict[str, Any]:
+        data = self.rpc(
+            "trader",
+            "query_stock_asset",
+            [_stock_account_arg(account_id, account_type)],
+        )
+        return data if isinstance(data, dict) else {}
+
+    def trader_positions(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        data = self.rpc(
+            "trader",
+            "query_stock_positions",
+            [_stock_account_arg(account_id, account_type)],
+        )
+        return _dict_list(data)
+
+    def trader_orders(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+        cancelable_only: bool = False,
+    ) -> list[dict[str, Any]]:
+        data = self.rpc(
+            "trader",
+            "query_stock_orders",
+            [_stock_account_arg(account_id, account_type), cancelable_only],
+        )
+        return _dict_list(data)
+
+    def trader_trades(
+        self,
+        account_id: str | None = None,
+        *,
+        account_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        data = self.rpc(
+            "trader",
+            "query_stock_trades",
+            [_stock_account_arg(account_id, account_type)],
+        )
+        return _dict_list(data)
+
     def recent_events(
         self,
         *,
@@ -203,6 +260,16 @@ def _methods_from_rpc_results(rpc_results: dict[str, Any]) -> dict[str, list[str
 def _limited(items: list[dict[str, Any]], limit: int | None) -> list[dict[str, Any]]:
     selected = items if limit is None else items[:limit]
     return deepcopy(selected)
+
+
+def _stock_account_arg(account_id: str | None, account_type: str | None) -> dict[str, str]:
+    return stock_account(account_id or "", account_type or "STOCK")
+
+
+def _dict_list(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return deepcopy([item for item in value if isinstance(item, dict)])
 
 
 def _market_response(rows: Any) -> dict[str, Any]:

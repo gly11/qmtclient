@@ -1,6 +1,6 @@
 ﻿# 策略接口
 
-`client.market`、`client.account`、`client.trading` 是 qmtserver RPC/API 的客户端封装，减少手写 RPC payload。只读行情优先使用 qmtserver `0.3.0` 的稳定 market/reference endpoints；直接 RPC 仍保留为 escape hatch。
+`client.market`、`client.account`、`client.trading` 是 qmtserver RPC/API 的客户端封装，减少手写 RPC payload。只读行情优先使用 qmtserver `0.3.0` 的稳定 market/reference endpoints；只读账户查询优先使用 qmtserver `0.4.0` 的稳定 trader readonly endpoints。直接 RPC 仍保留为 escape hatch。
 
 ## market
 
@@ -54,11 +54,22 @@ data = client.market.rpc("get_market_data", args=[...], kwargs={...})
 ## account
 
 ```python
+status = client.account.status()
 asset = client.account.asset("example-account")
 positions = client.account.positions("example-account")
-orders = client.account.orders("example-account")
+orders = client.account.orders("example-account", cancelable_only=True)
 trades = client.account.trades("example-account")
 ```
+
+这些方法调用 `/v1/trader/*`：
+
+- `status()` -> `/v1/trader/account-status`
+- `asset()` -> `/v1/trader/asset`
+- `positions()` -> `/v1/trader/positions`
+- `orders()` -> `/v1/trader/orders`
+- `trades()` -> `/v1/trader/trades`
+
+`account_id` 可省略，由 qmtserver 使用自己的配置解析默认账号；显式传入账号适合多账号场景。`account_type` 默认保持 `"STOCK"`，也可以传 `None` 让 qmtserver 使用服务端默认配置。
 
 订单/成交缓存：
 

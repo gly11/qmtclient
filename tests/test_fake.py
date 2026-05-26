@@ -13,6 +13,7 @@ class FakeClientTests(unittest.TestCase):
         client = FakeQmtClient(
             rpc_results={
                 "xtdata.get_full_tick": {"000001.SZ": {"last": 10.5}},
+                "trader.query_account_status": [{"account_id": "example-account"}],
                 "trader.query_stock_asset": {"account_id": "example-account", "cash": 1000},
                 "trader.order_stock": {"dry_run": True, "order_id": "fake-order"},
             },
@@ -21,6 +22,8 @@ class FakeClientTests(unittest.TestCase):
         )
 
         self.assertEqual(client.market.get_full_tick(["000001.SZ"])["000001.SZ"]["last"], 10.5)
+        self.assertEqual(client.account.status()[0]["account_id"], "example-account")
+        self.assertEqual(client.trader_asset("example-account")["cash"], 1000)
         self.assertEqual(client.account.asset("example-account")["cash"], 1000)
         self.assertEqual(
             client.trading.order_stock("example-account", "000001.SZ", 23, 100, 5, 10.5),
