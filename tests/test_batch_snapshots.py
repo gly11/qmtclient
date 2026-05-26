@@ -35,7 +35,7 @@ class BatchAndSnapshotTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             data_path = root / "bars.jsonl"
-            data_path.write_text('{"code":"000001.SZ"}\n{"code":"600000.SH"}\n', encoding="utf-8")
+            data_path.write_bytes(b'{"code":"000001.SZ"}\n{"code":"600000.SH"}\n')
             manifest_path = root / "manifest.json"
             valid_hash = "bc6d5ce58a8593b7565f39d4c740c037cad800f69c5be59f010772ad39d7d8dd"
             manifest_path.write_text(
@@ -62,7 +62,7 @@ class BatchAndSnapshotTests(unittest.TestCase):
     def test_snapshot_manifest_rejects_row_count_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            (root / "bars.jsonl").write_text('{"code":"000001.SZ"}\n', encoding="utf-8")
+            (root / "bars.jsonl").write_bytes(b'{"code":"000001.SZ"}\n')
             manifest_path = root / "manifest.json"
             valid_hash = "7425d94d6b2dbbfa26691450f5a78a6a09acbed31173ee598976365e88fdb204"
             manifest_path.write_text(
