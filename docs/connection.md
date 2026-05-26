@@ -20,7 +20,7 @@ for check in result["checks"]:
     print(check["name"], check["ok"])
 ```
 
-返回结构使用 `schema_version="qmtclient.diagnose.v1"`。真实 qmtserver 诊断只作为手动 smoke，不是默认单元测试门禁。
+返回结构使用 `schema_version="qmtclient.diagnose.v1"`。真实 qmtserver 诊断只作为手动冒烟检查，不是默认单元测试门禁。
 
 ## 地址示例
 
@@ -61,7 +61,7 @@ client = QmtClient(
 
 ## qmtserver `/v1`
 
-qmtclient `0.1.0` 目标兼容：
+qmtclient 默认目标兼容 qmtserver `/v1`：
 
 - `GET /v1/health`
 - `GET /v1/qmt/status`

@@ -1,6 +1,6 @@
 ﻿# 更新日志
 
-## Unreleased
+## 0.4.0
 
 - 新增诊断优先 CLI：`check`、`diagnose`、`methods`、`ws-check`、
   `market-capabilities`、`snapshot-verify`、`fixture-check`。

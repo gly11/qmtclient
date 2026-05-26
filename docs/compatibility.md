@@ -5,7 +5,7 @@
 | `0.1.0` | `/v1` | 基础 RPC、WebSocket、策略接口、fake client、fixture、event replay。 |
 | `0.2.0` | `/v1` | 稳定 market facade、诊断、retry/backoff、WebSocket reconnect、MemoryCache 和转换 helper。 |
 | `0.3.0` | `/v1` | 适配 qmtserver `0.3.0` 的稳定 market、history job、snapshot 和 quality/reference endpoints。 |
-| Unreleased | `/v1` | 新增诊断优先 CLI，覆盖连接检查、methods、WebSocket、market capabilities 和本地文件校验。 |
+| `0.4.0` | `/v1` | 新增诊断优先 CLI，覆盖连接检查、methods、WebSocket、market capabilities 和本地文件校验。 |
 
 qmtclient 默认使用 `/v1`。旧的无版本路径不作为客户端兼容目标。
 
@@ -82,7 +82,7 @@ CLI 覆盖范围：
 - `QmtSchemaMismatchError`: 返回字段、manifest 或 schema 与客户端契约不匹配。
 - `QmtOptionalDependencyError`: 显式转换工具缺少可选依赖。
 
-默认测试必须使用 mock、fake 或 fixture；真实 qmtserver smoke 是可选手动验证。
+默认测试必须使用 mock、fake 或 fixture；真实 qmtserver 冒烟检查是可选手动验证。
 
 ## 边界
 

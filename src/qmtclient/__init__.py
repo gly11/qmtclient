@@ -21,7 +21,7 @@ from qmtclient.models import DIAGNOSE_SCHEMA_VERSION, MARKET_SCHEMA_VERSION
 from qmtclient.snapshots import SnapshotClient, load_snapshot_manifest
 from qmtclient.strategy import AccountFacade, MarketFacade, TradingFacade, stock_account
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "DIAGNOSE_SCHEMA_VERSION",
