@@ -236,6 +236,91 @@ class CliTests(unittest.TestCase):
         self.assertFalse(summary["ok"])
         self.assertEqual(summary["error"]["type"], "QmtAuthError")
 
+    def test_methods_outputs_method_count(self) -> None:
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                pass
+
+            def methods(self) -> dict[str, object]:
+                return {"ok": True, "methods": ["xtdata.get_full_tick", "trader.query_asset"]}
+
+        code, stdout, stderr = _run_cli(["--json", "methods"], client_factory=FakeClient)
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(summary["ok"])
+        self.assertEqual(summary["method_count"], 2)
+        self.assertEqual(summary["methods"], ["xtdata.get_full_tick", "trader.query_asset"])
+
+    def test_market_capabilities_outputs_data(self) -> None:
+        class FakeMarket:
+            def capabilities(self) -> dict[str, object]:
+                return {"schema_versions": ["market.capabilities.v1"], "periods": ["1m"]}
+
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                self.market = FakeMarket()
+
+        code, stdout, stderr = _run_cli(
+            ["--json", "market-capabilities"], client_factory=FakeClient
+        )
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(summary["ok"])
+        self.assertEqual(summary["capabilities"]["periods"], ["1m"])
+
+    def test_ws_check_reads_one_event_and_passes_types(self) -> None:
+        captured: dict[str, Any] = {}
+
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                pass
+
+            def events(self, *, types: list[str] | None = None) -> object:
+                captured["types"] = types
+                return iter([{"type": "heartbeat", "data": {"service": "qmtserver"}}])
+
+        code, stdout, stderr = _run_cli(
+            ["--json", "ws-check", "--wait-seconds", "1", "--types", "stock_order,stock_trade"],
+            client_factory=FakeClient,
+        )
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(summary["ok"])
+        self.assertEqual(captured["types"], ["stock_order", "stock_trade"])
+        self.assertEqual(summary["event_type"], "heartbeat")
+
+    def test_ws_check_timeout_maps_to_connection_exit_code(self) -> None:
+        class TimeoutIterator:
+            def __iter__(self) -> TimeoutIterator:
+                return self
+
+            def __next__(self) -> dict[str, object]:
+                raise TimeoutError("timed out waiting for event")
+
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                pass
+
+            def events(self, *, types: list[str] | None = None) -> object:
+                return TimeoutIterator()
+
+        code, stdout, stderr = _run_cli(
+            ["--json", "ws-check", "--wait-seconds", "1"],
+            client_factory=FakeClient,
+        )
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 4)
+        self.assertEqual(stderr, "")
+        self.assertFalse(summary["ok"])
+        self.assertEqual(summary["error"]["type"], "TimeoutError")
+
 
 def _run_cli(argv: list[str], **kwargs: Any) -> tuple[int, str, str]:
     stdout = io.StringIO()

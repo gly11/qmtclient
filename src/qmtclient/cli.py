@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import queue
 import sys
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -58,6 +60,20 @@ def _build_parser() -> argparse.ArgumentParser:
     diagnose.add_argument("--sample-code")
     diagnose.set_defaults(func=_cmd_diagnose)
 
+    methods = subparsers.add_parser("methods", help="list qmtserver RPC methods")
+    methods.set_defaults(func=_cmd_methods)
+
+    ws_check = subparsers.add_parser("ws-check", help="wait for one websocket event")
+    ws_check.add_argument("--wait-seconds", type=float, default=10.0)
+    ws_check.add_argument("--types")
+    ws_check.set_defaults(func=_cmd_ws_check)
+
+    market_capabilities = subparsers.add_parser(
+        "market-capabilities",
+        help="check stable market capabilities endpoint",
+    )
+    market_capabilities.set_defaults(func=_cmd_market_capabilities)
+
     snapshot = subparsers.add_parser("snapshot-verify", help="verify snapshot manifest")
     snapshot.add_argument("manifest")
     snapshot.set_defaults(func=_cmd_snapshot_verify)
@@ -98,6 +114,50 @@ def _cmd_diagnose(args: argparse.Namespace) -> dict[str, Any]:
         _close_client(client)
 
 
+def _cmd_methods(args: argparse.Namespace) -> dict[str, Any]:
+    client = _create_client(args)
+    try:
+        response = client.methods()
+    finally:
+        _close_client(client)
+    methods = response.get("methods")
+    method_list = methods if isinstance(methods, list) else []
+    return {
+        "ok": bool(response.get("ok", True)),
+        "method_count": len(method_list),
+        "methods": method_list,
+    }
+
+
+def _cmd_market_capabilities(args: argparse.Namespace) -> dict[str, Any]:
+    client = _create_client(args)
+    try:
+        capabilities = client.market.capabilities()
+    finally:
+        _close_client(client)
+    return {
+        "ok": True,
+        "capabilities": capabilities,
+    }
+
+
+def _cmd_ws_check(args: argparse.Namespace) -> dict[str, Any]:
+    client = _create_client(args)
+    try:
+        event = _next_event_with_timeout(
+            client,
+            types=_split_types(args.types),
+            wait_seconds=args.wait_seconds,
+        )
+    finally:
+        _close_client(client)
+    return {
+        "ok": True,
+        "event_type": event.get("type"),
+        "event": event,
+    }
+
+
 def _cmd_snapshot_verify(args: argparse.Namespace) -> dict[str, Any]:
     manifest = load_snapshot_manifest(args.manifest)
     return {
@@ -128,6 +188,40 @@ def _cmd_fixture_check(args: argparse.Namespace) -> dict[str, Any]:
         "trades": _list_count(fixture.get("trades")),
         "market_keys": _sorted_keys(fixture.get("market")),
     }
+
+
+def _next_event_with_timeout(
+    client: Any,
+    *,
+    types: list[str] | None,
+    wait_seconds: float,
+) -> dict[str, Any]:
+    results: queue.Queue[dict[str, Any] | BaseException] = queue.Queue(maxsize=1)
+
+    def worker() -> None:
+        try:
+            event = next(iter(client.events(types=types)))
+        except BaseException as exc:
+            results.put(exc)
+            return
+        results.put(event)
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    try:
+        result = results.get(timeout=max(wait_seconds, 0.0))
+    except queue.Empty as exc:
+        raise TimeoutError("timed out waiting for websocket event") from exc
+    if isinstance(result, BaseException):
+        raise result
+    return result
+
+
+def _split_types(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    items = [item.strip() for item in value.split(",") if item.strip()]
+    return items or None
 
 
 def _create_client(args: argparse.Namespace) -> Any:
@@ -195,6 +289,8 @@ def _exit_code(exc: Exception) -> int:
     if isinstance(exc, QmtAuthError):
         return EXIT_AUTH_ERROR
     if isinstance(exc, QmtConnectionError):
+        return EXIT_CONNECTION_ERROR
+    if isinstance(exc, TimeoutError):
         return EXIT_CONNECTION_ERROR
     if isinstance(exc, (QmtProtocolError, QmtSchemaMismatchError)):
         return EXIT_SCHEMA_ERROR
