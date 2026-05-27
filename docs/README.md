@@ -5,6 +5,7 @@
 - [离线测试](offline-testing.md)
 - [数据工具](data-tools.md)
 - [CLI](cli.md)
+- [qmtserver 0.5.0 实时行情订阅适配计划](realtime-subscriptions-adaptation.md)
 - [qmtserver 0.4.0 只读交易查询适配](trader-readonly-adaptation.md)
 - [兼容性](compatibility.md)
 - [发布检查](release.md)

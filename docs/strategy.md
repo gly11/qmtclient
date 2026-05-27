@@ -54,6 +54,19 @@ quality = client.market.daily_quality(["000001.SZ"], start_time="2026-01-01", en
 data = client.market.rpc("get_market_data", args=[...], kwargs={...})
 ```
 
+### 实时行情订阅规划
+
+qmtserver `0.5.0` 准备提供 `/v1/market/subscriptions`。qmtclient 计划在下一阶段封装：
+
+```python
+subscription = client.market.create_subscription(["000001.SZ"], period="tick")
+for event in client.events(types=["market_quote"]):
+    print(event)
+client.market.stop_subscription(subscription["subscription_id"])
+```
+
+这是只读行情能力，不提供交易快捷入口。
+
 ## account
 
 ```python

@@ -1,5 +1,9 @@
 ﻿# 更新日志
 
+## 下一版本
+
+- 规划适配 qmtserver `0.5.0` 实时行情订阅 endpoints 和 WebSocket quote events。
+
 ## 0.4.0
 
 - 新增诊断优先 CLI：`check`、`diagnose`、`methods`、`ws-check`、
