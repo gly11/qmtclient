@@ -32,6 +32,69 @@ class FakeClientTests(unittest.TestCase):
         self.assertEqual(client.account.cached_orders(limit=1)[0]["order_id"], "fake-order")
         self.assertEqual(client.account.cached_trades(limit=1)[0]["trade_id"], "fake-trade")
 
+    def test_fake_client_supports_market_subscriptions(self) -> None:
+        client = FakeQmtClient(
+            events=[
+                {"type": "heartbeat", "data": {}},
+                {
+                    "type": "market_quote",
+                    "data": {
+                        "schema": "market.quote.v1",
+                        "symbol": "000001.SZ",
+                        "last_price": 10.25,
+                    },
+                    "meta": {"subscription_id": "sub_fake", "quote_source": "initial"},
+                },
+            ]
+        )
+
+        created = client.market.create_subscription(["000001.SZ"])
+
+        self.assertEqual(created["subscription_id"], "sub_fake")
+        self.assertEqual(created["status"], "active")
+        self.assertEqual(client.market.subscriptions()[0]["subscription_id"], "sub_fake")
+        self.assertEqual(client.market.subscription("sub_fake")["status"], "active")
+        self.assertEqual(client.market.stop_subscription("sub_fake")["status"], "stopped")
+        self.assertEqual(client.market.subscription("sub_fake")["status"], "stopped")
+        quote = next(
+            event
+            for event in client.events(types=["market_quote"])
+            if event["type"] == "market_quote"
+        )
+        self.assertEqual(quote["data"]["symbol"], "000001.SZ")
+
+    def test_fake_client_loads_subscription_fixture(self) -> None:
+        fixture = {
+            "market": {
+                "subscriptions": [
+                    {
+                        "schema": "market.subscription.v1",
+                        "subscription_id": "sub_fixture",
+                        "symbols": ["000001.SZ"],
+                        "period": "tick",
+                        "status": "active",
+                    }
+                ]
+            },
+            "events": [
+                {
+                    "type": "market_quote",
+                    "data": {"schema": "market.quote.v1", "symbol": "000001.SZ"},
+                    "meta": {"subscription_id": "sub_fixture"},
+                }
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "subscriptions.json"
+            path.write_text(json.dumps(fixture), encoding="utf-8")
+
+            client = FakeQmtClient.from_fixture(path)
+
+        self.assertEqual(client.market.subscriptions()[0]["subscription_id"], "sub_fixture")
+        self.assertEqual(client.market.subscription("sub_fixture")["status"], "active")
+        self.assertEqual(next(iter(client.events(types=["market_quote"])))["type"], "market_quote")
+
     def test_fake_client_missing_rpc_result_raises_rpc_error(self) -> None:
         client = FakeQmtClient()
 

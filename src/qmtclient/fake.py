@@ -31,6 +31,7 @@ class FakeQmtClient:
         self._orders = orders or []
         self._trades = trades or []
         self._events = events or []
+        self._subscriptions = _dict_list(self._market.get("subscriptions", []))
         self.xtdata = RpcTargetProxy(self, "xtdata")
         self.trader = RpcTargetProxy(self, "trader")
         self.market = MarketFacade(self)
@@ -107,6 +108,46 @@ class FakeQmtClient:
                 "error": None,
                 "meta": {"schema": "market.quality.v1"},
             }
+        if method == "POST" and path == "/market/subscriptions":
+            payload = kwargs.get("json")
+            if not isinstance(payload, dict):
+                payload = {}
+            symbols = payload.get("symbols")
+            if not isinstance(symbols, list):
+                symbols = []
+            period = payload.get("period", "tick")
+            subscription = _subscription(
+                "sub_fake",
+                symbols=[str(item) for item in symbols],
+                period=str(period),
+                status="active",
+            )
+            self._subscriptions = [
+                item
+                for item in self._subscriptions
+                if item.get("subscription_id") != subscription["subscription_id"]
+            ]
+            self._subscriptions.append(subscription)
+            return _api_response(subscription, schema="market.subscription.v1")
+        if method == "GET" and path == "/market/subscriptions":
+            return _api_response(
+                {"subscriptions": deepcopy(self._subscriptions)},
+                schema="market.subscription.v1",
+            )
+        if path.startswith("/market/subscriptions/"):
+            subscription_id = path.rsplit("/", 1)[-1]
+            if method == "GET":
+                return _api_response(
+                    _find_subscription(self._subscriptions, subscription_id),
+                    schema="market.subscription.v1",
+                )
+            if method == "DELETE":
+                subscription = _update_subscription_status(
+                    self._subscriptions,
+                    subscription_id,
+                    "stopped",
+                )
+                return _api_response(subscription, schema="market.subscription.v1")
         raise QmtRpcError(
             code="METHOD_NOT_ALLOWED",
             message=f"Fake request result is not configured: {method} {path}",
@@ -279,6 +320,67 @@ def _market_response(rows: Any) -> dict[str, Any]:
         "error": None,
         "meta": {"schema": "market.bars.v1"},
     }
+
+
+def _api_response(data: dict[str, Any], *, schema: str) -> dict[str, Any]:
+    return {"ok": True, "data": deepcopy(data), "error": None, "meta": {"schema": schema}}
+
+
+def _subscription(
+    subscription_id: str,
+    *,
+    symbols: list[str],
+    period: str,
+    status: str,
+) -> dict[str, Any]:
+    return {
+        "schema": "market.subscription.v1",
+        "subscription_id": subscription_id,
+        "symbols": symbols,
+        "period": period,
+        "status": status,
+        "created_at": "2026-05-27T09:30:00+00:00",
+        "updated_at": "2026-05-27T09:30:00+00:00",
+        "upstream_id": [1],
+        "last_error": None,
+    }
+
+
+def _find_subscription(
+    subscriptions: list[dict[str, Any]],
+    subscription_id: str,
+) -> dict[str, Any]:
+    for subscription in subscriptions:
+        if str(subscription.get("subscription_id")) == subscription_id:
+            return deepcopy(subscription)
+    raise QmtRpcError(
+        code="MARKET_SUBSCRIPTION_NOT_FOUND",
+        message=f"Market subscription not found: {subscription_id}",
+        target="market",
+        method="subscription",
+        response={
+            "ok": False,
+            "data": None,
+            "error": {
+                "code": "MARKET_SUBSCRIPTION_NOT_FOUND",
+                "message": f"Market subscription not found: {subscription_id}",
+            },
+        },
+    )
+
+
+def _update_subscription_status(
+    subscriptions: list[dict[str, Any]],
+    subscription_id: str,
+    status: str,
+) -> dict[str, Any]:
+    for index, subscription in enumerate(subscriptions):
+        if str(subscription.get("subscription_id")) == subscription_id:
+            updated = deepcopy(subscription)
+            updated["status"] = status
+            subscriptions[index] = updated
+            return updated
+    return _find_subscription(subscriptions, subscription_id)
 
 
 def _dict_or_none(value: Any) -> dict[str, Any] | None:

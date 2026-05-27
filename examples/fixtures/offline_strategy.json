@@ -25,6 +25,17 @@
       }
     ]
   },
+  "market": {
+    "subscriptions": [
+      {
+        "schema": "market.subscription.v1",
+        "subscription_id": "sub_example",
+        "symbols": ["000001.SZ"],
+        "period": "tick",
+        "status": "active"
+      }
+    ]
+  },
   "orders": [
     {
       "order_id": "order-1",
@@ -40,6 +51,25 @@
     }
   ],
   "events": [
+    {
+      "type": "heartbeat",
+      "data": {}
+    },
+    {
+      "type": "market_quote",
+      "data": {
+        "schema": "market.quote.v1",
+        "symbol": "000001.SZ",
+        "last_price": 10.25,
+        "volume": 1200,
+        "amount": 12300.0,
+        "extra": {}
+      },
+      "meta": {
+        "subscription_id": "sub_example",
+        "quote_source": "initial"
+      }
+    },
     {
       "type": "stock_order",
       "data": {

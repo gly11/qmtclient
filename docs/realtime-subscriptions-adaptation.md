@@ -95,7 +95,7 @@ for event in client.events(types=["market_subscription", "market_quote"]):
 ## 阶段进度
 
 - 阶段 1：核心 SDK 和 `client.market` 订阅生命周期方法。
-- 阶段 2：`FakeQmtClient`、fixture 和事件回放。
+- 阶段 2：`FakeQmtClient`、fixture 和事件回放支持。
 - 阶段 3：CLI 订阅冒烟检查和完整发布前检查。
 
 ## 测试计划
