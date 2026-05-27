@@ -86,6 +86,7 @@ created = client.snapshots.create(
 ```powershell
 qmtclient check --base-url http://192.168.1.10:8000 --token-env QMTCLIENT_TOKEN
 qmtclient diagnose --sample-code 000001.SZ --json
+qmtclient market-subscribe-check --symbol 000001.SZ --wait-seconds 10
 qmtclient snapshot-verify .\snapshot\manifest.json
 ```
 

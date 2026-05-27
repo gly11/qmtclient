@@ -1,8 +1,8 @@
-# qmtserver 0.5.0 实时行情订阅适配计划
+# qmtserver 0.5.0 实时行情订阅适配
 
 qmtserver `0.5.0` 准备提供稳定实时行情订阅 endpoints，并通过 WebSocket 推送
-`market_subscription` 和 `market_quote` 事件。qmtclient 应适配这些只读能力，让策略机不安装
-MiniQMT 和 `xtquant` 也能订阅远程行情。
+`market_subscription` 和 `market_quote` 事件。qmtclient 下一版本已适配这些只读能力，让策略机
+不安装 MiniQMT 和 `xtquant` 也能订阅远程行情。
 
 ## 服务端契约
 
@@ -94,11 +94,11 @@ for event in client.events(types=["market_subscription", "market_quote"]):
 
 ## 阶段进度
 
-- 阶段 1：核心 SDK 和 `client.market` 订阅生命周期方法。
-- 阶段 2：`FakeQmtClient`、fixture 和事件回放支持。
-- 阶段 3：CLI 订阅冒烟检查和完整发布前检查。
+- 阶段 1：已完成核心 SDK 和 `client.market` 订阅生命周期方法。
+- 阶段 2：已完成 `FakeQmtClient`、fixture 和事件回放支持。
+- 阶段 3：已完成 CLI 订阅冒烟检查；发布前仍需完整质量门和可选真实 qmtserver smoke。
 
-## 测试计划
+## 测试覆盖
 
 - `QmtClient` 调用 create/list/get/delete endpoint，并解析 named response。
 - `client.market` facade 暴露订阅生命周期方法。
@@ -108,9 +108,9 @@ for event in client.events(types=["market_subscription", "market_quote"]):
 - `FakeQmtClient` 支持订阅状态和事件回放。
 - CLI 订阅 smoke 使用 fake client 和 fake WebSocket，不依赖真实 qmtserver。
 
-## CLI 规划
+## CLI
 
-新增只读诊断命令：
+只读诊断命令：
 
 ```powershell
 qmtclient market-subscribe-check --symbol 000001.SZ --wait-seconds 10
@@ -125,12 +125,12 @@ qmtclient market-subscribe-check --symbol 000001.SZ --wait-seconds 10
 
 命令不得下单、撤单、转账，也不得保存 token。
 
-## 文档计划
+## 文档覆盖
 
-- `docs/compatibility.md` 增加 `/v1/market/subscriptions` 支持范围和 schema。
-- `docs/strategy.md` 增加实时行情订阅示例。
-- `docs/cli.md` 增加订阅 smoke 命令。
-- `docs/offline-testing.md` 增加 `market_quote` 事件回放示例。
+- `docs/compatibility.md` 记录 `/v1/market/subscriptions` 支持范围和 schema。
+- `docs/strategy.md` 记录实时行情订阅示例。
+- `docs/cli.md` 记录订阅 smoke 命令。
+- `docs/offline-testing.md` 记录 `market_quote` 事件回放示例。
 - `CHANGELOG.md` 在下一版本记录 qmtserver `0.5.0` 适配。
 
 ## 发布建议

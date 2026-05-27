@@ -272,6 +272,63 @@ class CliTests(unittest.TestCase):
         self.assertTrue(summary["ok"])
         self.assertEqual(summary["capabilities"]["periods"], ["1m"])
 
+    def test_market_subscribe_check_creates_waits_and_stops_subscription(self) -> None:
+        captured: dict[str, Any] = {}
+
+        class FakeMarket:
+            def create_subscription(
+                self,
+                symbols: list[str],
+                *,
+                period: str = "tick",
+            ) -> dict[str, object]:
+                captured["created"] = {"symbols": symbols, "period": period}
+                return {"subscription_id": "sub_test", "status": "active"}
+
+            def stop_subscription(self, subscription_id: str) -> dict[str, object]:
+                captured["stopped"] = subscription_id
+                return {"subscription_id": subscription_id, "status": "stopped"}
+
+        class FakeClient:
+            def __init__(self, *args: object, **kwargs: object) -> None:
+                self.market = FakeMarket()
+
+            def events(self, *, types: list[str] | None = None) -> object:
+                captured["types"] = types
+                return iter(
+                    [
+                        {"type": "heartbeat", "data": {}},
+                        {
+                            "type": "market_quote",
+                            "data": {"schema": "market.quote.v1", "symbol": "000001.SZ"},
+                            "meta": {"subscription_id": "sub_test"},
+                        },
+                    ]
+                )
+
+        code, stdout, stderr = _run_cli(
+            [
+                "--json",
+                "market-subscribe-check",
+                "--symbol",
+                "000001.SZ",
+                "--wait-seconds",
+                "1",
+            ],
+            client_factory=FakeClient,
+        )
+
+        summary = json.loads(stdout)
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr, "")
+        self.assertTrue(summary["ok"])
+        self.assertEqual(captured["created"], {"symbols": ["000001.SZ"], "period": "tick"})
+        self.assertEqual(captured["types"], ["market_subscription", "market_quote"])
+        self.assertEqual(captured["stopped"], "sub_test")
+        self.assertEqual(summary["subscription"]["subscription_id"], "sub_test")
+        self.assertEqual(summary["event_type"], "market_quote")
+        self.assertEqual(summary["stopped"]["status"], "stopped")
+
     def test_ws_check_reads_one_event_and_passes_types(self) -> None:
         captured: dict[str, Any] = {}
 

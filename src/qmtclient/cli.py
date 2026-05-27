@@ -74,6 +74,15 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     market_capabilities.set_defaults(func=_cmd_market_capabilities)
 
+    market_subscribe_check = subparsers.add_parser(
+        "market-subscribe-check",
+        help="create a readonly market subscription and wait for one quote event",
+    )
+    market_subscribe_check.add_argument("--symbol", action="append", required=True)
+    market_subscribe_check.add_argument("--period", default="tick")
+    market_subscribe_check.add_argument("--wait-seconds", type=float, default=10.0)
+    market_subscribe_check.set_defaults(func=_cmd_market_subscribe_check)
+
     snapshot = subparsers.add_parser("snapshot-verify", help="verify snapshot manifest")
     snapshot.add_argument("manifest")
     snapshot.set_defaults(func=_cmd_snapshot_verify)
@@ -138,6 +147,31 @@ def _cmd_market_capabilities(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "ok": True,
         "capabilities": capabilities,
+    }
+
+
+def _cmd_market_subscribe_check(args: argparse.Namespace) -> dict[str, Any]:
+    client = _create_client(args)
+    subscription: dict[str, Any] | None = None
+    stopped: dict[str, Any] | None = None
+    try:
+        subscription = client.market.create_subscription(args.symbol, period=args.period)
+        event = _next_matching_event_with_timeout(
+            client,
+            types=["market_subscription", "market_quote"],
+            wait_seconds=args.wait_seconds,
+        )
+        subscription_id = subscription.get("subscription_id")
+        if subscription_id is not None:
+            stopped = client.market.stop_subscription(str(subscription_id))
+    finally:
+        _close_client(client)
+    return {
+        "ok": True,
+        "subscription": subscription or {},
+        "event_type": event.get("type"),
+        "event": event,
+        "stopped": stopped or {},
     }
 
 
@@ -212,6 +246,35 @@ def _next_event_with_timeout(
         result = results.get(timeout=max(wait_seconds, 0.0))
     except queue.Empty as exc:
         raise TimeoutError("timed out waiting for websocket event") from exc
+    if isinstance(result, BaseException):
+        raise result
+    return result
+
+
+def _next_matching_event_with_timeout(
+    client: Any,
+    *,
+    types: list[str],
+    wait_seconds: float,
+) -> dict[str, Any]:
+    wanted = set(types)
+    results: queue.Queue[dict[str, Any] | BaseException] = queue.Queue(maxsize=1)
+
+    def worker() -> None:
+        try:
+            for event in client.events(types=types):
+                if event.get("type") in wanted:
+                    results.put(event)
+                    return
+        except BaseException as exc:
+            results.put(exc)
+
+    thread = threading.Thread(target=worker, daemon=True)
+    thread.start()
+    try:
+        result = results.get(timeout=max(wait_seconds, 0.0))
+    except queue.Empty as exc:
+        raise TimeoutError("timed out waiting for market subscription event") from exc
     if isinstance(result, BaseException):
         raise result
     return result

@@ -48,6 +48,7 @@ qmtclient diagnose --sample-code 000001.SZ --json
 qmtclient methods --json
 qmtclient ws-check --wait-seconds 10
 qmtclient market-capabilities
+qmtclient market-subscribe-check --symbol 000001.SZ --wait-seconds 10
 qmtclient snapshot-verify .\snapshot\manifest.json
 qmtclient fixture-check .\examples\fixtures\market_daily.json
 ```
@@ -87,6 +88,16 @@ qmtclient ws-check --wait-seconds 10 --types stock_order,stock_trade
 ### market-capabilities
 
 调用 `client.market.capabilities()`，确认 qmtserver 稳定 market endpoint 可用。
+
+### market-subscribe-check
+
+创建只读实时行情订阅，等待一条 `market_subscription` 或 `market_quote` 事件，然后尝试停止订阅。
+
+```powershell
+qmtclient market-subscribe-check --symbol 000001.SZ --wait-seconds 10
+```
+
+该命令只检查行情订阅链路，不提供下单、撤单或其他交易快捷入口。
 
 ### snapshot-verify
 
@@ -149,6 +160,7 @@ CLI 按以下步骤实现：
 - M1：CLI 骨架和本地命令：`version`、`snapshot-verify`、`fixture-check`。
 - M2：连接诊断命令：`check`、`diagnose`、token 读取和 client 构造。
 - M3：服务能力冒烟检查：`methods`、`market-capabilities`、`ws-check`。
+- M3.5：实时行情订阅冒烟检查：`market-subscribe-check`。
 - M4：README、兼容性文档、CLI 文档和质量门。
 
 默认测试使用 mock、fake 或临时 fixture，不连接真实 qmtserver。真实 qmtserver 冒烟检查可手动执行。

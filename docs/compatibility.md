@@ -63,6 +63,7 @@ CLI 覆盖范围：
 - `qmtclient methods`
 - `qmtclient ws-check`
 - `qmtclient market-capabilities`
+- 下一版本：`qmtclient market-subscribe-check`
 - `qmtclient snapshot-verify`
 - `qmtclient fixture-check`
 

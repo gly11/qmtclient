@@ -2,7 +2,8 @@
 
 ## 下一版本
 
-- 规划适配 qmtserver `0.5.0` 实时行情订阅 endpoints 和 WebSocket quote events。
+- 适配 qmtserver `0.5.0` 实时行情订阅 endpoints 和 WebSocket quote events。
+- 新增 `market-subscribe-check` 只读订阅冒烟检查。
 
 ## 0.4.0
 
