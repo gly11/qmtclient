@@ -26,6 +26,18 @@ def _trader_response(data: dict[str, object]) -> httpx.Response:
     )
 
 
+def _market_subscription_response(data: dict[str, object]) -> httpx.Response:
+    return httpx.Response(
+        200,
+        json={
+            "ok": True,
+            "data": data,
+            "error": None,
+            "meta": {"schema": "market.subscription.v1"},
+        },
+    )
+
+
 class StrategyFacadeTests(unittest.TestCase):
     def test_stock_account_is_json_friendly(self) -> None:
         self.assertEqual(
@@ -116,6 +128,99 @@ class StrategyFacadeTests(unittest.TestCase):
 
         with self.assertRaises(QmtSchemaMismatchError):
             client.market.instruments(["000001.SZ"])
+
+    def test_market_subscription_facade_calls_stable_endpoints(self) -> None:
+        seen: list[tuple[str, str]] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen.append((request.method, request.url.path))
+            if request.method == "POST" and request.url.path == "/v1/market/subscriptions":
+                payload = json.loads(request.content)
+                self.assertEqual(payload, {"symbols": ["000001.SZ"], "period": "tick"})
+                return _market_subscription_response(
+                    {
+                        "schema": "market.subscription.v1",
+                        "subscription_id": "sub_test",
+                        "symbols": ["000001.SZ"],
+                        "period": "tick",
+                        "status": "active",
+                    }
+                )
+            if request.method == "GET" and request.url.path == "/v1/market/subscriptions":
+                return _market_subscription_response(
+                    {
+                        "subscriptions": [
+                            {
+                                "schema": "market.subscription.v1",
+                                "subscription_id": "sub_test",
+                                "status": "active",
+                            }
+                        ]
+                    }
+                )
+            if request.method == "GET" and request.url.path == "/v1/market/subscriptions/sub_test":
+                return _market_subscription_response(
+                    {
+                        "schema": "market.subscription.v1",
+                        "subscription_id": "sub_test",
+                        "status": "active",
+                    }
+                )
+            if (
+                request.method == "DELETE"
+                and request.url.path == "/v1/market/subscriptions/sub_test"
+            ):
+                return _market_subscription_response(
+                    {
+                        "schema": "market.subscription.v1",
+                        "subscription_id": "sub_test",
+                        "status": "stopped",
+                    }
+                )
+            raise AssertionError(f"{request.method} {request.url.path}")
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        created = client.market.create_subscription(["000001.SZ"])
+        self.assertEqual(created["subscription_id"], "sub_test")
+        self.assertEqual(client.market.subscriptions()[0]["subscription_id"], "sub_test")
+        self.assertEqual(client.market.subscription("sub_test")["status"], "active")
+        self.assertEqual(client.market.stop_subscription("sub_test")["status"], "stopped")
+        self.assertEqual(
+            seen,
+            [
+                ("POST", "/v1/market/subscriptions"),
+                ("GET", "/v1/market/subscriptions"),
+                ("GET", "/v1/market/subscriptions/sub_test"),
+                ("DELETE", "/v1/market/subscriptions/sub_test"),
+            ],
+        )
+
+    def test_market_subscription_facade_raises_rpc_error_for_api_error(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "ok": False,
+                    "data": None,
+                    "error": {
+                        "code": "INVALID_SUBSCRIPTION_REQUEST",
+                        "message": "symbols required",
+                    },
+                    "meta": {"request_id": "subscription-request"},
+                },
+            )
+
+        client = QmtClient("http://qmt.test", transport=httpx.MockTransport(handler))
+
+        with self.assertRaises(QmtRpcError) as raised:
+            client.market.create_subscription([])
+
+        self.assertEqual(raised.exception.code, "INVALID_SUBSCRIPTION_REQUEST")
+        self.assertEqual(raised.exception.message, "symbols required")
+        self.assertEqual(raised.exception.target, "market")
+        self.assertEqual(raised.exception.method, "create_subscription")
+        self.assertEqual(raised.exception.request_id, "subscription-request")
 
     def test_trader_readonly_helpers_call_stable_endpoints(self) -> None:
         seen_paths: list[str] = []

@@ -92,6 +92,12 @@ for event in client.events(types=["market_subscription", "market_quote"]):
 
 第一版不新增专门的异步框架、不引入 GUI、不直接连接 MiniQMT。
 
+## 阶段进度
+
+- 阶段 1：核心 SDK 和 `client.market` 订阅生命周期方法。
+- 阶段 2：`FakeQmtClient`、fixture 和事件回放。
+- 阶段 3：CLI 订阅冒烟检查和完整发布前检查。
+
 ## 测试计划
 
 - `QmtClient` 调用 create/list/get/delete endpoint，并解析 named response。

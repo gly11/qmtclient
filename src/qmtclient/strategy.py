@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any, Protocol
 
+import qmtclient.market as market_api
 from qmtclient.models import MarketResponse, normalize_bars, normalize_instruments
 
 
@@ -147,6 +148,23 @@ class MarketFacade:
         )
         _raise_api_error(response, "market", "daily_quality")
         return response
+
+    def create_subscription(
+        self,
+        symbols: Sequence[str],
+        *,
+        period: str = "tick",
+    ) -> dict[str, Any]:
+        return market_api.create_subscription(self._client, symbols, period=period)
+
+    def subscriptions(self) -> list[dict[str, Any]]:
+        return market_api.subscriptions(self._client)
+
+    def subscription(self, subscription_id: str) -> dict[str, Any]:
+        return market_api.subscription(self._client, subscription_id)
+
+    def stop_subscription(self, subscription_id: str) -> dict[str, Any]:
+        return market_api.stop_subscription(self._client, subscription_id)
 
     def rpc(
         self,
