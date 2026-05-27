@@ -20,6 +20,9 @@ asset = client.account.asset("example-account")
 orders = client.account.cached_orders()
 ```
 
+`client.account.asset()`、`positions()`、`orders()`、`trades()` 会复用
+`trader.query_stock_*` fixture 数据，用于离线覆盖 qmtserver trader readonly 行为。
+
 未配置的 RPC 会抛出 `QmtRpcError(code="METHOD_NOT_ALLOWED")`。
 
 ## Fixture

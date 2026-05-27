@@ -46,12 +46,17 @@ print(client.xtdata.get_full_tick(["000001.SZ"]))
 ```python
 ticks = client.market.get_full_tick(["000001.SZ"])
 daily = client.market.daily_bars(["000001.SZ"], start_time="20260501")
-quality = client.market.daily_quality(["000001.SZ"], start_time="2026-01-01", end_time="2026-01-31")
+quality = client.market.daily_quality(
+    ["000001.SZ"],
+    start_time="2026-01-01",
+    end_time="2026-01-31",
+)
 asset = client.account.asset("example-account")
 orders = client.account.cached_orders(limit=20)
 ```
 
-`daily_bars`、`intraday_bars` 和 `instruments` 优先使用 qmtserver 稳定 `/v1/market` 与 `/v1/reference` endpoints。直接 RPC 仍可用于 escape hatch。
+`daily_bars`、`intraday_bars` 和 `instruments` 优先使用 qmtserver 稳定
+`/v1/market` 与 `/v1/reference` endpoints。直接 RPC 仍可用于 escape hatch。
 `account` 只读查询优先使用 qmtserver `0.4.0` 稳定 `/v1/trader/*` endpoints。
 
 交易入口在 `client.trading`。它只组装参数并调用 qmtserver；是否允许真实交易由 qmtserver 的配置、保护和审计决定。

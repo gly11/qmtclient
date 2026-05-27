@@ -1,10 +1,12 @@
-# qmtserver 0.4 只读交易查询适配
+# qmtserver 0.4.0 只读交易查询适配
 
-qmtserver `0.4.0` prerelease 新增稳定只读交易查询 endpoint。qmtclient `0.4.0` 已适配这些 endpoint，让 `client.account` 优先走稳定 API，而不是继续依赖 RPC escape hatch。
+qmtserver `0.4.0` 提供稳定只读交易查询 endpoints。qmtclient `0.4.0`
+已适配这些 endpoints，让 `client.account` 优先走稳定 API，而不是继续依赖
+RPC escape hatch。
 
 ## 服务端契约
 
-新增 endpoint：
+服务端 endpoints：
 
 ```text
 GET /v1/trader/account-status
@@ -51,7 +53,7 @@ cancelable_only=true
 
 ## API 设计
 
-`QmtClient` 增加：
+`QmtClient`：
 
 ```python
 client.trader_account_status()
@@ -76,7 +78,8 @@ client.account.trades(account_id=None, account_type="STOCK")
 - `account_id` 可选，用于支持 qmtserver 从服务端配置解析默认账号。
 - 仍允许显式传 `account_id`，适合多账号或不想依赖服务端默认账号的场景。
 - `client.account` 的 `account_type` 默认保持 `"STOCK"`；如需完全使用服务端默认值，可显式传 `None`。
-- `client.account.infos()` 暂保留 RPC，因为 qmtserver 0.4 只提供 `account-status` 稳定 endpoint。
+- `client.account.infos()` 暂保留 RPC，因为 qmtserver `0.4.0` 只提供
+  `account-status` 稳定 endpoint。
 
 ## 数据返回
 
@@ -97,11 +100,11 @@ client.account.trades(account_id=None, account_type="STOCK")
 - `client.trader_asset()` 调用 `/v1/trader/asset`，传递 `account_id` 和 `account_type`。
 - `client.trader_positions()`、`trader_orders(cancelable_only=True)`、`trader_trades()` 解析 named list。
 - `client.trader_account_status()` 解析 `statuses`。
-- `client.account.asset()`、`positions()`、`orders()`、`trades()` 优先走稳定 endpoint。
+- `client.account.asset()`、`positions()`、`orders()`、`trades()` 优先走稳定 endpoints。
 - `ok=False` 响应抛出 `QmtRpcError`，保留 `code` 和 `message`。
 - 现有 `client.account.rpc()` 和 `client.trader.query_stock_asset(...)` 不变。
 
-默认测试继续使用 `httpx.MockTransport`，不连接真实 qmtserver。
+默认测试继续使用 `httpx.MockTransport` 和 `FakeQmtClient`，不连接真实 qmtserver。
 
 ## 验证
 
@@ -113,6 +116,7 @@ uv run ty check
 git diff --check
 ```
 
-## 发布建议
+## 发布说明
 
-建议在 qmtclient `0.4.0` tag 前保留本适配。这样 qmtclient `0.4.0` 与 qmtserver `0.4.0` 的稳定只读交易查询契约保持一致。
+本适配属于 qmtclient `0.4.0` 内容，用于匹配 qmtserver `0.4.0`
+的稳定只读交易查询契约。
