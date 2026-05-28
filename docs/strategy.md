@@ -56,7 +56,7 @@ data = client.market.rpc("get_market_data", args=[...], kwargs={...})
 
 ### 实时行情订阅
 
-下一版本适配 qmtserver `0.5.0` 的 `/v1/market/subscriptions`：
+qmtclient `0.5.0` 适配 qmtserver `0.5.0` 的 `/v1/market/subscriptions`：
 
 ```python
 subscription = client.market.create_subscription(["000001.SZ"], period="tick")

@@ -1,7 +1,7 @@
 # qmtserver 0.5.0 实时行情订阅适配
 
-qmtserver `0.5.0` 准备提供稳定实时行情订阅 endpoints，并通过 WebSocket 推送
-`market_subscription` 和 `market_quote` 事件。qmtclient 下一版本已适配这些只读能力，让策略机
+qmtserver `0.5.0` 提供稳定实时行情订阅 endpoints，并通过 WebSocket 推送
+`market_subscription` 和 `market_quote` 事件。qmtclient `0.5.0` 已适配这些只读能力，让策略机
 不安装 MiniQMT 和 `xtquant` 也能订阅远程行情。
 
 ## 服务端契约
@@ -96,7 +96,7 @@ for event in client.events(types=["market_subscription", "market_quote"]):
 
 - 阶段 1：已完成核心 SDK 和 `client.market` 订阅生命周期方法。
 - 阶段 2：已完成 `FakeQmtClient`、fixture 和事件回放支持。
-- 阶段 3：已完成 CLI 订阅冒烟检查；发布前仍需完整质量门和可选真实 qmtserver smoke。
+- 阶段 3：已完成 CLI 订阅冒烟检查；发布前需完整质量门和可选真实 qmtserver smoke。
 
 ## 测试覆盖
 
@@ -131,9 +131,9 @@ qmtclient market-subscribe-check --symbol 000001.SZ --wait-seconds 10
 - `docs/strategy.md` 记录实时行情订阅示例。
 - `docs/cli.md` 记录订阅 smoke 命令。
 - `docs/offline-testing.md` 记录 `market_quote` 事件回放示例。
-- `CHANGELOG.md` 在下一版本记录 qmtserver `0.5.0` 适配。
+- `CHANGELOG.md` 记录 qmtserver `0.5.0` 适配。
 
 ## 发布建议
 
-建议作为 qmtclient `0.5.0` 主线。该能力是只读行情能力，适合优先推进；交易相关能力继续由
+该能力属于 qmtclient `0.5.0` 主线。它是只读行情能力；交易相关能力继续由
 qmtserver 的配置、保护和审计控制。
